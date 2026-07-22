@@ -18,7 +18,7 @@ DB_PATH = Path(os.getenv("AL_SADI_DB_PATH", ROOT / "factory.db"))
 MONEY_PLACES = Decimal("0.01")
 ATTENDANCE_STATUSES = {"Present", "Absent", "Leave", "Late"}
 EMPLOYEE_STATUSES = {"Active", "On Leave", "Inactive", "Archived"}
-MACHINE_STATUSES = {"Running", "Idle", "Maintenance", "Offline"}
+MACHINE_STATUSES = {"Running", "Idle", "Maintenance", "Offline", "Out of Service"}
 
 
 class FactoryError(Exception):
@@ -232,6 +232,64 @@ def initialize_database(path: str | Path | None = None) -> None:
                 version TEXT PRIMARY KEY,
                 applied_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS telegram_users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                telegram_user_id INTEGER NOT NULL UNIQUE,
+                display_name TEXT NOT NULL,
+                application_role TEXT NOT NULL CHECK(application_role IN ('Admin', 'Staff')),
+                status TEXT NOT NULL DEFAULT 'Active'
+                    CHECK(status IN ('Active', 'Suspended', 'Removed')),
+                created_at TEXT NOT NULL,
+                created_by TEXT NOT NULL,
+                last_seen_at TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS telegram_pending_operations (
+                operation_id TEXT PRIMARY KEY,
+                telegram_user_id INTEGER NOT NULL,
+                chat_id INTEGER NOT NULL,
+                operation_type TEXT NOT NULL
+                    CHECK(operation_type IN ('production', 'expense', 'attendance', 'machine')),
+                step TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'Pending'
+                    CHECK(status IN ('Pending', 'Confirmed', 'Cancelled', 'Expired', 'Failed')),
+                idempotency_key TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                confirmed_at TEXT,
+                error_message TEXT,
+                FOREIGN KEY(telegram_user_id) REFERENCES telegram_users(telegram_user_id)
+                    ON DELETE RESTRICT
+            );
+
+            CREATE TABLE IF NOT EXISTS telegram_mutation_receipts (
+                operation_id TEXT PRIMARY KEY,
+                entity_type TEXT NOT NULL,
+                entity_id INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(operation_id) REFERENCES telegram_pending_operations(operation_id)
+                    ON DELETE RESTRICT
+            );
+
+            CREATE TABLE IF NOT EXISTS telegram_rate_limits (
+                telegram_user_id INTEGER PRIMARY KEY,
+                window_started_at TEXT NOT NULL,
+                request_count INTEGER NOT NULL DEFAULT 0,
+                blocked_until TEXT,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS telegram_bot_status (
+                id INTEGER PRIMARY KEY CHECK(id = 1),
+                status TEXT NOT NULL CHECK(status IN ('Stopped', 'Starting', 'Running', 'Error')),
+                instance_id TEXT,
+                started_at TEXT,
+                heartbeat_at TEXT,
+                message TEXT
+            );
             """
         )
 
@@ -286,10 +344,20 @@ def initialize_database(path: str | Path | None = None) -> None:
             CREATE INDEX IF NOT EXISTS ix_audit_recent ON audit_logs(timestamp DESC, id DESC);
             CREATE INDEX IF NOT EXISTS ix_audit_user ON audit_logs(username);
             CREATE INDEX IF NOT EXISTS ix_audit_entity ON audit_logs(entity_type, entity_id);
+            CREATE INDEX IF NOT EXISTS ix_telegram_users_status
+                ON telegram_users(status, application_role);
+            CREATE INDEX IF NOT EXISTS ix_telegram_pending_user_status
+                ON telegram_pending_operations(telegram_user_id, status, updated_at DESC);
+            CREATE INDEX IF NOT EXISTS ix_telegram_pending_expiry
+                ON telegram_pending_operations(status, expires_at);
             INSERT OR IGNORE INTO excel_sync_status(id, status, message)
                 VALUES (1, 'Out of date', 'Workbook has not been synchronized by v1.1 yet.');
+            INSERT OR IGNORE INTO telegram_bot_status(id, status, message)
+                VALUES (1, 'Stopped', 'Telegram bot has not been started.');
             INSERT OR IGNORE INTO schema_migrations(version, applied_at)
                 VALUES ('1.1.0', CURRENT_TIMESTAMP);
+            INSERT OR IGNORE INTO schema_migrations(version, applied_at)
+                VALUES ('1.2.0', CURRENT_TIMESTAMP);
             """
         )
 

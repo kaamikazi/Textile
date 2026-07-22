@@ -1,0 +1,393 @@
+:root {
+    --bg: #06101f;
+    --panel: rgba(13, 28, 52, 0.72);
+    --panel-strong: rgba(16, 35, 64, 0.92);
+    --line: rgba(125, 219, 255, 0.16);
+    --text: #e8f7ff;
+    --muted: #8ea7ba;
+    --cyan: #18d7ff;
+    --blue: #3b82f6;
+    --green: #38e6a1;
+    --red: #ff637d;
+}
+
+html, body, [class*="css"] {
+    font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+.stApp {
+    background:
+        radial-gradient(circle at 20% 0%, rgba(24, 215, 255, 0.16), transparent 28%),
+        radial-gradient(circle at 80% 8%, rgba(59, 130, 246, 0.16), transparent 32%),
+        linear-gradient(135deg, #040917 0%, #071629 48%, #06101f 100%);
+    color: var(--text);
+}
+
+#MainMenu, footer {
+    visibility: hidden;
+}
+
+header {
+    background: transparent !important;
+}
+
+[data-testid="collapsedControl"] {
+    visibility: visible !important;
+    display: flex !important;
+    opacity: 1 !important;
+    z-index: 50 !important;
+}
+
+.block-container {
+    width: 100%;
+    max-width: 1680px;
+    margin: 0;
+    padding: 1.5rem 1.75rem 8.5rem;
+}
+
+section[data-testid="stSidebar"] {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 17rem !important;
+    min-width: 17rem !important;
+    height: 100vh;
+    overflow-y: auto;
+    background: rgba(4, 13, 29, 0.9);
+    border-right: 1px solid rgba(24, 215, 255, 0.15);
+    box-shadow: 18px 0 60px rgba(0, 0, 0, 0.35);
+    z-index: 20;
+}
+
+section[data-testid="stSidebar"] > div {
+    padding: 1.1rem 0.95rem;
+}
+
+section[data-testid="stSidebar"] [role="radiogroup"] {
+    display: grid;
+    gap: 0.35rem;
+}
+
+section[data-testid="stSidebar"] label[data-baseweb="radio"] {
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 0.72rem 0.78rem;
+    margin: 0;
+    transition: background 160ms ease, border-color 160ms ease, transform 160ms ease, color 160ms ease;
+}
+
+section[data-testid="stSidebar"] label[data-baseweb="radio"]:hover {
+    background: rgba(24, 215, 255, 0.1);
+    border-color: rgba(24, 215, 255, 0.28);
+    transform: translateX(2px);
+}
+
+section[data-testid="stSidebar"] label[data-baseweb="radio"] p {
+    color: #cfe8f7 !important;
+    font-weight: 700;
+}
+
+section[data-testid="stSidebar"] label[data-baseweb="radio"] input:checked + div {
+    border-color: var(--cyan) !important;
+}
+
+div[data-testid="stAppViewContainer"] {
+    margin-left: 0;
+}
+
+section.main {
+    scroll-behavior: smooth;
+}
+
+.brand {
+    padding: 1rem;
+    border: 1px solid rgba(24, 215, 255, 0.22);
+    background: linear-gradient(145deg, rgba(24, 215, 255, 0.12), rgba(59, 130, 246, 0.08));
+    border-radius: 14px;
+    margin-bottom: 1rem;
+}
+
+.brand h1 {
+    font-size: 1.05rem;
+    line-height: 1.2;
+    margin: 0;
+    color: #f4fbff;
+}
+
+.brand span {
+    display: block;
+    margin-top: 0.35rem;
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.nav-pill {
+    border-radius: 12px;
+    padding: 0.78rem 0.85rem;
+    margin: 0.35rem 0;
+    border: 1px solid transparent;
+    color: #bdd5e6;
+}
+
+.nav-pill-active {
+    border-color: rgba(24, 215, 255, 0.35);
+    background: rgba(24, 215, 255, 0.12);
+    color: white;
+    box-shadow: inset 0 0 30px rgba(24, 215, 255, 0.08);
+}
+
+.page-title {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0.4rem 0 1.5rem;
+}
+
+.page-title h2 {
+    font-size: 2rem;
+    margin: 0;
+    color: var(--text);
+    letter-spacing: 0;
+}
+
+.page-title p {
+    margin: 0.35rem 0 0;
+    color: var(--muted);
+}
+
+.glass-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(18px);
+    border-radius: 16px;
+    padding: 1rem;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(24, 215, 255, 0.36);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+}
+
+.metric-card {
+    min-height: 126px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.metric-label {
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08rem;
+    margin-bottom: 0.7rem;
+}
+
+.metric-value {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.metric-foot {
+    margin-top: 0.55rem;
+    color: var(--cyan);
+    font-size: 0.86rem;
+}
+
+.section-label {
+    margin: 0 0 0.75rem;
+    color: #dff8ff;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.activity {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(125, 219, 255, 0.1);
+}
+
+.activity:last-child {
+    border-bottom: 0;
+}
+
+.activity-dot {
+    width: 0.72rem;
+    height: 0.72rem;
+    margin-top: 0.32rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--cyan), var(--blue));
+    box-shadow: 0 0 20px rgba(24, 215, 255, 0.58);
+}
+
+.activity-title {
+    color: #f5fbff;
+    font-weight: 700;
+    margin: 0;
+}
+
+.activity-detail {
+    color: var(--muted);
+    margin: 0.12rem 0 0;
+    font-size: 0.88rem;
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(24, 215, 255, 0.25);
+    background: rgba(24, 215, 255, 0.1);
+    color: #dff8ff;
+    border-radius: 999px;
+    padding: 0.22rem 0.62rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.stButton > button, .stDownloadButton > button {
+    background: linear-gradient(135deg, var(--cyan), var(--blue)) !important;
+    color: #03101f !important;
+    border: 0 !important;
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    box-shadow: 0 12px 30px rgba(24, 215, 255, 0.18);
+    transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.stButton > button:hover, .stDownloadButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 40px rgba(24, 215, 255, 0.3);
+}
+
+div[data-testid="stDataFrame"], div[data-testid="stTable"] {
+    border: 1px solid rgba(125, 219, 255, 0.14);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+}
+
+div[data-testid="stPlotlyChart"] {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    margin-bottom: 1.25rem;
+}
+
+.js-plotly-plot,
+.plot-container,
+.svg-container {
+    max-width: 100% !important;
+}
+
+div[data-testid="stHorizontalBlock"] {
+    gap: 1.1rem;
+    margin-bottom: 1.45rem;
+}
+
+div[data-testid="stVerticalBlock"] {
+    gap: 0.9rem;
+}
+
+.section-spacer {
+    height: 0.6rem;
+}
+
+.bottom-safe-space {
+    height: 5rem;
+}
+
+label, .stMarkdown, .stTextInput label, .stNumberInput label, .stDateInput label, .stSelectbox label, .stTextArea label {
+    color: #d9edf8 !important;
+}
+
+input, textarea, div[data-baseweb="select"] > div {
+    background: rgba(8, 20, 39, 0.86) !important;
+    border-color: rgba(125, 219, 255, 0.18) !important;
+    color: #eefaff !important;
+    border-radius: 12px !important;
+}
+
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0.4rem;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background: rgba(13, 28, 52, 0.72);
+    border: 1px solid rgba(125, 219, 255, 0.12);
+    border-radius: 12px;
+    color: var(--muted);
+}
+
+.stTabs [aria-selected="true"] {
+    color: white;
+    border-color: rgba(24, 215, 255, 0.42);
+}
+
+@media (max-width: 900px) {
+    div[data-testid="stAppViewContainer"] {
+        margin-left: 0;
+    }
+
+    .block-container {
+        width: 100%;
+        padding: 1rem 1rem 8rem;
+    }
+
+    section[data-testid="stSidebar"] {
+        position: relative;
+        width: auto !important;
+        min-width: auto !important;
+        height: auto;
+    }
+
+    .page-title {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .metric-card {
+        min-height: 112px;
+    }
+
+    .metric-value {
+        font-size: 1.35rem;
+    }
+}
+
+@media (min-width: 1500px) {
+    .block-container {
+        max-width: 1680px;
+        padding-right: 2.25rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .block-container {
+        padding-inline: 0.8rem;
+    }
+
+    .glass-card {
+        padding: 0.85rem;
+        border-radius: 14px;
+    }
+
+    .page-title h2 {
+        font-size: 1.55rem;
+    }
+
+    .metric-value {
+        font-size: 1.25rem;
+    }
+}

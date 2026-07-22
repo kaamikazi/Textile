@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Live factory data and generated artifacts
+factory.db
+factory.db-*
+factory_records.xlsx
+backups/
+exports/
+*.log
+
+# Local secrets and environment files
+.env
+.streamlit/secrets.toml
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

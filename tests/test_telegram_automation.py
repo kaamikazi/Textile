@@ -23,6 +23,7 @@ from telegram_automation import (
     expire_pending_operations,
     get_active_pending_operation,
     get_telegram_user,
+    is_chat_allowed,
     record_telegram_rejection,
     release_bot_lease,
     require_authorized_user,
@@ -115,11 +116,13 @@ def test_no_save_before_confirmation_and_cancel_changes_nothing(telegram_factory
 
 
 def test_confirm_saves_once_and_repeated_confirm_is_idempotent(telegram_factory):
-    db_path, _, _, _ = telegram_factory
+    db_path, workbook_path, _, _ = telegram_factory
     pending = _pending(STAFF_ID, "production", _production_payload(), db_path)
     first = confirm_pending_operation(pending.operation_id, STAFF_ID, db_path)
     second = confirm_pending_operation(pending.operation_id, STAFF_ID, db_path)
     assert first.entity_id == second.entity_id
+    assert first.sync_status == "Synced"
+    assert workbook_path.exists()
     assert second.already_confirmed is True
     assert database.fetch_one("SELECT COUNT(*) AS total FROM production_entries", path=db_path)["total"] == 1
     audit = database.fetch_df(
@@ -286,3 +289,26 @@ def test_bot_lease_rejects_duplicate_instances(isolated_factory):
     release_bot_lease("instance-one", path=db_path)
     acquire_bot_lease("instance-two", db_path)
     release_bot_lease("instance-two", path=db_path)
+
+
+@pytest.mark.parametrize("operation_type", ["production", "expense", "attendance", "machine"])
+def test_every_workflow_can_cancel_without_factory_mutation(telegram_factory, operation_type):
+    db_path, _, _, _ = telegram_factory
+    user_id = ADMIN_ID if operation_type == "machine" else STAFF_ID
+    user = require_authorized_user(user_id, db_path)
+    pending = create_pending_operation(
+        user, user_id, operation_type, "initial", {}, db_path
+    )
+    assert cancel_pending_operation(user, pending.operation_id, db_path) == 1
+    row = database.fetch_one(
+        "SELECT status FROM telegram_pending_operations WHERE operation_id = ?",
+        (pending.operation_id,), db_path,
+    )
+    assert row["status"] == "Cancelled"
+
+
+def test_chat_restrictions_allow_private_or_exact_approved_group():
+    assert is_chat_allowed("private", 10, None)
+    assert is_chat_allowed("supergroup", -100123, -100123)
+    assert not is_chat_allowed("group", -100999, -100123)
+    assert not is_chat_allowed("channel", -100123, None)

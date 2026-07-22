@@ -1,6 +1,6 @@
 # Al Sadi Knitwear Factory OS
 
-Version **v1.1.0** is a local Streamlit factory-management application backed by SQLite, with Plotly dashboards and protected Excel exports.
+Version **v1.2.0** is a local Streamlit factory-management application backed by SQLite, with Plotly dashboards, protected Excel exports, and a separately operated secure Telegram submission bot.
 
 ## Installation
 
@@ -19,15 +19,24 @@ python -m streamlit run app.py --server.port 8501
 
 On this computer, run `run_app.cmd` or double-click `start_app.vbs`, then open `http://localhost:8501/`.
 
+The Telegram polling service is a separate process and is never started by Streamlit:
+
+```powershell
+$env:TELEGRAM_BOT_TOKEN="token-from-BotFather"
+.\run_telegram_bot.cmd
+```
+
 ## First Admin
 
-The first v1.1 launch shows a one-time Admin setup screen. Passwords require at least 10 characters with a letter and number. Passwords are salted and hashed with PBKDF2; no default password is supplied.
+The first launch shows a one-time Admin setup screen. Passwords require at least 10 characters with a letter and number. Passwords are salted and hashed with PBKDF2; no default password is supplied.
 
 ## Permissions
 
 **Admin** can add and manage operational records, archive employees, manage machines, create/restore backups, manage local users, view audit logs, and export reports.
 
 **Staff** can view factory pages and add production, expenses, and attendance. Staff cannot edit/delete records, manage users/machines/employees, create or restore backups, or view audit logs.
+
+Telegram access is independently allowlisted by numeric Telegram user ID in **Settings > Telegram Automation**. Telegram Staff can submit confirmed production, expenses, and attendance. Telegram Admin can also change machine status. No Telegram submission reaches SQLite before confirmation.
 
 ## Data Architecture
 
@@ -43,9 +52,15 @@ Restore accepts only a validated `.db` file from the configured backups folder a
 
 ## Excel And OneDrive
 
-The app updates a local workbook only. Excel Web does not update automatically. Download the workbook and upload or sync it through OneDrive. Microsoft Graph integration is not included in v1.1.
+The app updates a local workbook only. Excel Web does not update automatically. Download the workbook and upload or sync it through OneDrive. Microsoft Graph integration is not included in v1.2.
 
 Close `factory_records.xlsx` in desktop Excel before retrying a failed sync; Windows may lock the file while it is open.
+
+## Telegram Automation
+
+The bot supports `/start`, `/help`, `/production`, `/expense`, `/attendance`, `/machine`, `/today`, `/status`, and `/cancel`. Workflow state, expiry, authorization, and idempotency receipts are persisted in SQLite. Telegram never writes directly to Excel; confirmed transactions trigger the normal post-commit Excel synchronization.
+
+Read `TELEGRAM_SETUP.md`, `TELEGRAM_SECURITY.md`, and `TELEGRAM_COMMANDS.md` before enabling the bot.
 
 ## Recovery
 

@@ -13,3 +13,5 @@ Al Sadi Knitwear Factory OS v1.1 uses local application authentication for a tru
 This release does not provide TLS termination, centralized identity, MFA, remote revocation, or enterprise audit retention. Do not expose Streamlit directly to the public internet. Use host/network access controls and operating-system file permissions.
 
 Microsoft Graph, WhatsApp, and AI message parsing are intentionally outside v1.1 scope.
+
+Telegram v1.2 uses a separate local polling process, numeric-ID allowlisting, confirmation gates, persistent rate limiting, idempotency receipts, and token-redacted logs. Telegram is not an enterprise identity provider and does not make the Streamlit service suitable for direct public-internet exposure. See `TELEGRAM_SECURITY.md`.

@@ -18,6 +18,8 @@ def actor() -> Actor:
 def isolated_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     database_path = tmp_path / "factory_test.db"
     workbook_path = tmp_path / "factory_records_test.xlsx"
+    monkeypatch.setattr(database, "DB_PATH", database_path)
+    monkeypatch.setattr(spreadsheet_sync, "DEFAULT_DB_PATH", database_path)
     monkeypatch.setattr(spreadsheet_sync, "WORKBOOK_PATH", workbook_path)
     database.initialize_database(database_path)
     return database_path, workbook_path

@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import plotly.graph_objects as go
 import streamlit as st
+
+from auth import AuthenticatedUser
+from database import FactoryError, MutationResult, get_excel_sync_status
 
 
 ROOT = Path(__file__).resolve().parent
@@ -23,7 +27,7 @@ def load_css() -> None:
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 
-def sidebar_navigation(pages: list[str]) -> str:
+def sidebar_navigation(pages: list[str], user: AuthenticatedUser) -> tuple[str, bool]:
     st.sidebar.markdown(
         """
         <div class="brand">
@@ -33,19 +37,31 @@ def sidebar_navigation(pages: list[str]) -> str:
         """,
         unsafe_allow_html=True,
     )
-    selected = st.sidebar.radio("Navigation", pages, label_visibility="collapsed")
-    st.sidebar.markdown("---")
     st.sidebar.markdown(
-        """
-        <div class="glass-card">
-            <div class="metric-label">System Ready</div>
-            <div class="status-chip">SQLite Connected</div>
-            <p class="activity-detail" style="margin-top:.7rem">Prepared for WhatsApp, AI parsing, and PDF reporting modules.</p>
+        f"""
+        <div class="session-card">
+            <strong>{user.username}</strong>
+            <span>{user.role} | Local session</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    return selected
+    selected = st.sidebar.radio("Navigation", pages, label_visibility="collapsed")
+    st.sidebar.markdown("---")
+    sync = get_excel_sync_status()
+    status_class = sync["status"].lower().replace(" ", "-")
+    st.sidebar.markdown(
+        f"""
+        <div class="glass-card">
+            <div class="metric-label">Excel Sync Status</div>
+            <div class="status-chip sync-{status_class}">{sync['status']}</div>
+            <p class="activity-detail" style="margin-top:.7rem">Last success: {sync['last_success_at'] or 'Not yet synced'}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    logout = st.sidebar.button("Logout", width="stretch")
+    return selected, logout
 
 
 def page_header(title: str, subtitle: str, chip: str | None = None) -> None:
@@ -103,3 +119,39 @@ def plotly_layout(fig: go.Figure, height: int = 340) -> go.Figure:
 
 def money(value: float) -> str:
     return f"BDT {value:,.0f}"
+
+
+def show_mutation_result(result: MutationResult, success_message: str) -> None:
+    st.success(success_message)
+    if result.sync_status != "Synced":
+        st.warning(result.sync_message)
+
+
+def show_factory_error(error: Exception) -> None:
+    if isinstance(error, FactoryError):
+        st.error(str(error))
+    else:
+        st.error("The operation could not be completed. Check the application logs and try again.")
+
+
+def sync_status_panel() -> dict[str, Any]:
+    status = get_excel_sync_status()
+    style = {
+        "Synced": "sync-synced",
+        "Out of date": "sync-out-of-date",
+        "Failed": "sync-failed",
+    }.get(status["status"], "sync-out-of-date")
+    st.markdown(
+        f"""
+        <div class="sync-panel">
+            <div>
+                <span class="status-chip {style}">{status['status']}</span>
+                <strong>Excel Sync Status</strong>
+            </div>
+            <p>{status['message'] or 'No sync message.'}</p>
+            <small>Last successful sync: {status['last_success_at'] or 'Never'}</small>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    return status

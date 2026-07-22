@@ -120,6 +120,25 @@ section.main {
     font-size: 0.78rem;
 }
 
+.session-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 0.85rem;
+    border-left: 2px solid var(--cyan);
+    background: rgba(24, 215, 255, 0.06);
+}
+
+.session-card strong {
+    color: var(--text);
+}
+
+.session-card span {
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
 .nav-pill {
     border-radius: 12px;
     padding: 0.78rem 0.85rem;
@@ -253,6 +272,43 @@ section.main {
     padding: 0.22rem 0.62rem;
     font-size: 0.78rem;
     font-weight: 700;
+}
+
+.sync-panel {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.85rem;
+    margin: 0.8rem 0 1rem;
+    border: 1px solid var(--line);
+    background: rgba(5, 17, 34, 0.58);
+}
+
+.sync-panel > div {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.sync-panel p, .sync-panel small {
+    margin: 0;
+    color: var(--muted);
+}
+
+.sync-synced {
+    border-color: rgba(56, 230, 161, 0.4);
+    background: rgba(56, 230, 161, 0.12);
+    color: var(--green);
+}
+
+.sync-out-of-date {
+    border-color: rgba(24, 215, 255, 0.38);
+    color: var(--cyan);
+}
+
+.sync-failed {
+    border-color: rgba(255, 99, 125, 0.42);
+    background: rgba(255, 99, 125, 0.12);
+    color: #ff9aac;
 }
 
 .stButton > button, .stDownloadButton > button {

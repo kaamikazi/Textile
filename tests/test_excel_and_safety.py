@@ -49,6 +49,18 @@ def test_month_export_filters_raw_month_data(isolated_factory, actor, tmp_path):
     assert production_dates == ["2026-07-01"]
     assert expense_dates == ["2026-07-02"]
     assert workbook["Attendance"].max_row == 2
+    assert all(sheet.protection.sheet for sheet in workbook.worksheets)
+
+
+def test_excel_backup_names_are_unique(isolated_factory, actor, tmp_path):
+    db_path, _ = isolated_factory
+    source = spreadsheet_sync.sync_factory_workbook(tmp_path / "source.xlsx", db_path)
+    backup_dir = tmp_path / "excel_backups"
+    first, first_message = spreadsheet_sync.backup_excel_file(source, backup_dir)
+    second, second_message = spreadsheet_sync.backup_excel_file(source, backup_dir)
+    assert first_message == second_message == "Backup created successfully."
+    assert first != second
+    assert Path(first).exists() and Path(second).exists()
 
 
 def test_backup_names_are_unique_and_integrity_passes(isolated_factory, actor, tmp_path):

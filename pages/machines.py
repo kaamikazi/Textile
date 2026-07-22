@@ -10,7 +10,7 @@ from database import delete_machine, fetch_df, save_machine
 from ui import glass_close, glass_open, page_header, plotly_layout, show_factory_error, show_mutation_result
 
 
-MACHINE_STATUSES = ["Running", "Idle", "Maintenance", "Offline"]
+MACHINE_STATUSES = ["Running", "Idle", "Maintenance", "Out of Service", "Offline"]
 
 
 def render(user: AuthenticatedUser) -> None:
@@ -83,7 +83,7 @@ def render(user: AuthenticatedUser) -> None:
                 y="machine_number", orientation="h", color="status",
                 color_discrete_map={
                     "Running": "#18d7ff", "Idle": "#64748b",
-                    "Maintenance": "#f59e0b", "Offline": "#ff637d",
+                    "Maintenance": "#f59e0b", "Out of Service": "#ff637d", "Offline": "#ff637d",
                 },
             )
             st.plotly_chart(plotly_layout(fig, 330), width="stretch")

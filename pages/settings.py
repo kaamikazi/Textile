@@ -23,6 +23,7 @@ from database import (
 )
 from spreadsheet_sync import sync_factory_workbook
 from ui import glass_close, glass_open, page_header, show_factory_error, sync_status_panel
+from pages.telegram_admin import render_telegram_automation
 
 
 def _demo_mode_enabled() -> bool:
@@ -72,8 +73,8 @@ def render(user: AuthenticatedUser) -> None:
             set_excel_sync_status("Failed", f"Manual sync failed: {exc}")
             show_factory_error(exc)
 
-    safety_tab, users_tab, audit_tab, maintenance_tab = st.tabs(
-        ["Data Safety", "Local Users", "Audit Logs", "Maintenance"]
+    safety_tab, users_tab, telegram_tab, audit_tab, maintenance_tab = st.tabs(
+        ["Data Safety", "Local Users", "Telegram Automation", "Audit Logs", "Maintenance"]
     )
 
     with safety_tab:
@@ -177,6 +178,9 @@ def render(user: AuthenticatedUser) -> None:
                     st.rerun()
                 except Exception as exc:
                     show_factory_error(exc)
+
+    with telegram_tab:
+        render_telegram_automation(user)
 
     with audit_tab:
         logs = fetch_df("SELECT * FROM audit_logs ORDER BY timestamp DESC, id DESC")

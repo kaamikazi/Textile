@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import os
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10 and earlier
+    tomllib = None
+    import toml
 
 
 ROOT = Path(__file__).resolve().parent
@@ -23,9 +28,11 @@ def _load_streamlit_secrets() -> dict:
     if not path.exists():
         return {}
     try:
-        with path.open("rb") as handle:
-            return tomllib.load(handle)
-    except (OSError, tomllib.TOMLDecodeError):
+        if tomllib is not None:
+            with path.open("rb") as handle:
+                return tomllib.load(handle)
+        return toml.load(path)
+    except (OSError, ValueError):
         return {}
 
 

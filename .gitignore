@@ -16,6 +16,14 @@ exports/
 .env
 .streamlit/secrets.toml
 
+# Virtual environments
+.venv/
+.venv*/
+venv/
+
+# Tooling caches
+.ruff_cache/
+
 # Editor and OS files
 .vscode/
 .idea/

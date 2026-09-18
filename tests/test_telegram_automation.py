@@ -14,8 +14,8 @@ from database import Actor, ConflictError, ValidationError
 from telegram_automation import (
     TelegramAccessError,
     TelegramRateLimitError,
-    authorize_telegram_user,
     acquire_bot_lease,
+    authorize_telegram_user,
     cancel_pending_operation,
     confirm_pending_operation,
     create_pending_operation,
@@ -33,7 +33,6 @@ from telegram_automation import (
 )
 from telegram_bot import RedactingFormatter, _guard, _operation_keyboard, _selection_keyboard
 from telegram_config import TelegramConfig
-
 
 ADMIN_ID = 110001
 STAFF_ID = 110002

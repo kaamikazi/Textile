@@ -9,7 +9,6 @@ from pathlib import Path
 
 from database import Actor, ConflictError, ValidationError, fetch_one, transaction, utc_now, write_audit_log
 
-
 PBKDF2_ITERATIONS = 600_000
 ROLE_PERMISSIONS = {
     "Admin": {

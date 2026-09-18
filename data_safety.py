@@ -8,11 +8,34 @@ from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 
-from database import Actor, DB_PATH, ValidationError, initialize_database, transaction, write_audit_log
-from spreadsheet_sync import BACKUPS_PATH, WORKBOOK_PATH, backup_excel_file
-
+from database import DB_PATH, Actor, ValidationError, initialize_database, transaction, write_audit_log
+from spreadsheet_sync import BACKUPS_PATH, backup_excel_file
 
 REQUIRED_FACTORY_TABLES = {"production_entries", "expenses", "employees", "machines"}
+
+
+def _preserve_current_database(target: Path, directory: Path, actor: Actor) -> Path:
+    """Snapshot the live database before a restore replaces it.
+
+    A restore is most often run precisely because the live file is damaged,
+    so this must not require that file to be valid. When it is readable we
+    take a proper SQLite backup; when it is not, we fall back to a raw byte
+    copy under a distinct name so the damaged file is preserved for
+    investigation instead of blocking recovery.
+    """
+    if not target.exists():
+        # Nothing to preserve (fresh install, or the file was deleted).
+        placeholder = _unique_path(directory, "factory_missing", ".db")
+        placeholder.write_bytes(b"")
+        return placeholder
+
+    valid, _ = validate_sqlite_database(target)
+    if valid:
+        return backup_database(actor, target, directory, audit=False)
+
+    damaged = _unique_path(directory, "factory_corrupt", ".db")
+    shutil.copy2(target, damaged)
+    return damaged
 
 
 def _unique_path(directory: Path, stem: str, suffix: str) -> Path:
@@ -155,7 +178,7 @@ def restore_database(
         raise ValidationError(message)
 
     target = Path(target_path) if target_path is not None else DB_PATH
-    pre_restore = backup_database(actor, target, directory, audit=False)
+    pre_restore = _preserve_current_database(target, directory, actor)
     temp_path: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
@@ -180,7 +203,10 @@ def restore_database(
             )
         return target, pre_restore
     except Exception:
-        if pre_restore.exists():
+        # Put back whatever was there before, but only if it is actually a
+        # readable database. Restoring a corrupt snapshot over the target
+        # would destroy nothing useful and could mask the real failure.
+        if pre_restore.exists() and validate_sqlite_database(pre_restore)[0]:
             with closing(sqlite3.connect(pre_restore)) as source_conn, closing(sqlite3.connect(target)) as target_conn:
                 source_conn.backup(target_conn)
         raise

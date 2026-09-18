@@ -1,0 +1,75 @@
+name: CI
+
+# This repository's default branch is currently `master`; `main` does not
+# exist yet. Both are listed so CI works today and keeps working if the
+# branch is renamed later. See PRODUCTION_READINESS.md.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+# A new push to the same branch supersedes an in-flight run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # Version-pinned so a new ruff release cannot turn CI red on its own.
+      - name: Install ruff
+        run: python -m pip install "ruff==0.16.8"
+
+      # Rules come from pyproject.toml, so this matches local output.
+      - name: Lint
+        run: ruff check .
+
+  test:
+    name: pytest (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.12"]
+        include:
+          # The factory PC currently runs 3.10, and telegram_config.py keeps
+          # a tomllib fallback for it, so the interpreter that actually runs
+          # in production is covered too.
+          - os: windows-latest
+            python-version: "3.10"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      # Fails loudly if requirements.txt drifts from what the code imports.
+      - name: Check imports
+        run: |
+          python -c "import app, ui, database, auth, data_safety, spreadsheet_sync, telegram_automation, telegram_config, telegram_bot"
+          python -c "from pages import dashboard, employees, expenses, machines, production, reports, settings, telegram_admin"
+
+      - name: Run tests
+        run: python -m pytest -q

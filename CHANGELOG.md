@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased - 2026-09-19 - Production hardening
+
+- Fixed `run_app.cmd`, `run_telegram_bot.cmd` and `start_app.vbs`, which hardcoded a per-user AI tooling cache interpreter that no longer has Streamlit installed; both launchers were broken, and `start_app.vbs` failed silently. They now resolve Python at run time, verify dependencies, and report failures.
+- Fixed `restore_database()` refusing to run when the live database was corrupted - the exact case it exists for - because its pre-restore snapshot required the live file to be valid.
+- Fixed production and expense pages showing stale ledgers and totals after a save, because both query their tables before the submit handler runs.
+- Fixed mutation and confirmation messages being discarded by an immediate `st.rerun()`, which made the "Excel sync failed - your data is safe in the database" warning unreachable.
+- Fixed a malformed `.streamlit/secrets.toml` being reported as "token not configured" instead of naming the parse error.
+- Declared the previously undeclared `toml` dependency used by the Python 3.10 `tomllib` fallback.
+- Added `.github/workflows/ci.yml`: ruff plus pytest on Windows and Linux for Python 3.10, 3.11 and 3.12.
+- Added `pyproject.toml` pinning an explicit ruff rule set so lint is reproducible in CI.
+- Added `tests/test_failure_paths.py` (14 tests) covering locked Excel files, corrupted and truncated backups, a full corrupt-and-restore recovery drill, Telegram confirmations racing expiry, and transaction rollback. 34 tests before, 48 after.
+- Hardened `database.connect()` against leaking a handle when a PRAGMA fails.
+- Corrected the README's Python requirement (3.10+, not 3.11+) to match the code and the factory PC.
+- Added `PRODUCTION_READINESS.md` recording what was fixed, what needs Imran's decision, and what was out of scope.
+
 ## Unreleased - UI/UX pass
 
 - Replaced the `glass_open`/`glass_close` card pair with a real `card()` container. The old helpers emitted an unclosed `<div>` into their own markdown block, so every card rendered empty and its content fell outside it.

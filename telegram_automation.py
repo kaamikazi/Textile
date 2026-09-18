@@ -13,7 +13,6 @@ import database
 from database import (
     Actor,
     ConflictError,
-    MutationResult,
     NotFoundError,
     ValidationError,
     fetch_df,
@@ -24,7 +23,6 @@ from database import (
     utc_now,
     write_audit_log,
 )
-
 
 TELEGRAM_ROLES = {"Admin", "Staff"}
 TELEGRAM_USER_STATUSES = {"Active", "Suspended", "Removed"}
@@ -745,11 +743,11 @@ def today_summary(day: date | str | None = None, path: str | Path | None = None)
     machines = fetch_df(
         "SELECT status, COUNT(*) AS total FROM machines GROUP BY status", path=path
     )
-    attendance_counts = {status: 0 for status in sorted(database.ATTENDANCE_STATUSES)}
+    attendance_counts = dict.fromkeys(sorted(database.ATTENDANCE_STATUSES), 0)
     attendance_counts.update(
         {str(row["status"]): int(row["total"]) for _, row in attendance.iterrows()}
     )
-    machine_counts = {status: 0 for status in sorted(TELEGRAM_MACHINE_STATUSES)}
+    machine_counts = dict.fromkeys(sorted(TELEGRAM_MACHINE_STATUSES), 0)
     machine_counts.update({str(row["status"]): int(row["total"]) for _, row in machines.iterrows()})
     earnings = float(production["earnings"])
     expense_total = float(expenses["expenses"])

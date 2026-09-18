@@ -15,17 +15,17 @@ from ui import (
     compact_number,
     empty_state,
     field_error,
+    flash_mutation,
     kpi_tile,
     money,
     page_header,
     section_head,
     show_factory_error,
-    show_mutation_result,
+    show_flash,
     spacer,
     status_chip,
     sync_bar,
 )
-
 
 MACHINE_STATUSES = ["Running", "Idle", "Maintenance", "Out of Service", "Offline"]
 PRODUCTIVE_STATUSES = ["Running"]
@@ -72,6 +72,7 @@ def render(user: AuthenticatedUser) -> None:
         eyebrow="Daily Operations",
     )
     sync_bar(key="machines")
+    show_flash()
 
     machines = fetch_df("SELECT * FROM machines ORDER BY machine_number")
     production = fetch_df(
@@ -183,10 +184,9 @@ def render(user: AuthenticatedUser) -> None:
                                 machine_number, status, assigned_operator,
                                 maintenance_notes, installed_on, user.actor,
                             )
-                            show_mutation_result(
+                            flash_mutation(
                                 result, "Machine saved. Its database ID was preserved."
                             )
-                            st.rerun()
                         except Exception as exc:
                             show_factory_error(exc)
 
@@ -262,8 +262,7 @@ def render(user: AuthenticatedUser) -> None:
                 ):
                     try:
                         result = delete_machine(entity_id, user.actor)
-                        show_mutation_result(result, "Machine deleted.")
-                        st.rerun()
+                        flash_mutation(result, "Machine deleted.")
                     except Exception as exc:
                         show_factory_error(exc)
 

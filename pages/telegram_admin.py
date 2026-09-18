@@ -13,8 +13,16 @@ from telegram_automation import (
     recent_telegram_audit,
     set_telegram_user_status,
 )
-from telegram_config import telegram_token_is_configured
-from ui import card, empty_state, field_error, kpi_tile, show_factory_error, spacer
+from telegram_config import telegram_config_problem, telegram_token_is_configured
+from ui import (
+    card,
+    empty_state,
+    field_error,
+    flash_notice,
+    kpi_tile,
+    show_factory_error,
+    spacer,
+)
 
 
 def _run_connection_test() -> tuple[bool, str]:
@@ -47,6 +55,13 @@ def render_telegram_automation(user: AuthenticatedUser) -> None:
         kpi_tile("Last Heartbeat", str(status["heartbeat_at"] or "Never"), "from the bot process")
 
     spacer()
+
+    problem = telegram_config_problem()
+    if problem:
+        st.error(
+            f"Telegram configuration could not be read. {problem}",
+            icon="⚠",
+        )
 
     with card("Connection", key="telegram-connection"):
         st.markdown(
@@ -123,11 +138,9 @@ def _render_users(user: AuthenticatedUser) -> None:
             else:
                 try:
                     authorize_telegram_user(telegram_id, display_name, role, user.actor)
-                    st.success(
-                        f"Telegram user ID {int(telegram_id)} authorized as {role}.",
-                        icon="\u2705",
+                    flash_notice(
+                        f"Telegram user ID {int(telegram_id)} authorized as {role}."
                     )
-                    st.rerun()
                 except Exception as exc:
                     show_factory_error(exc)
 
@@ -174,8 +187,7 @@ def _render_users(user: AuthenticatedUser) -> None:
                 set_telegram_user_status(
                     int(selected.telegram_user_id), next_status, user.actor
                 )
-                st.success("Telegram access updated.", icon="\u2705")
-                st.rerun()
+                flash_notice("Telegram access updated.")
             except Exception as exc:
                 show_factory_error(exc)
 

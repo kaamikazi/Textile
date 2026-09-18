@@ -21,20 +21,21 @@ from database import (
     initialize_demo_data,
     set_excel_sync_status,
 )
+from pages.telegram_admin import render_telegram_automation
 from spreadsheet_sync import sync_factory_workbook
 from ui import (
     card,
     empty_state,
     field_error,
+    flash_notice,
     kpi_tile,
     page_header,
     section_head,
     show_factory_error,
+    show_flash,
     spacer,
     sync_status_panel,
 )
-from pages.telegram_admin import render_telegram_automation
-
 
 BACKUP_COLUMNS = {
     "name": st.column_config.TextColumn("File"),
@@ -92,6 +93,7 @@ def render(user: AuthenticatedUser) -> None:
         eyebrow="Administration",
     )
 
+    show_flash()
     _render_sync_header(user)
 
     safety_tab, users_tab, telegram_tab, audit_tab, maintenance_tab = st.tabs(
@@ -124,8 +126,7 @@ def _render_sync_header(user: AuthenticatedUser) -> None:
                 path = sync_factory_workbook()
             set_excel_sync_status("Synced", f"Manual sync completed: {path.name}.")
             record_export(user.actor, "Manual Excel synchronization completed from Settings.")
-            st.success("Excel synchronization completed.", icon="✅")
-            st.rerun()
+            flash_notice("Excel synchronization completed.")
         except PermissionError:
             set_excel_sync_status("Failed", "Close factory_records.xlsx in Excel and retry.")
             st.error("Close factory_records.xlsx in Excel and retry.", icon="⚠")
@@ -279,8 +280,7 @@ def _render_users(user: AuthenticatedUser) -> None:
             if submitted:
                 try:
                     create_user(username, password, role, user.actor)
-                    st.success(f"{role} user created.", icon="✅")
-                    st.rerun()
+                    flash_notice(f"{role} user created.")
                 except Exception as exc:
                     show_factory_error(exc)
 
@@ -315,8 +315,7 @@ def _render_users(user: AuthenticatedUser) -> None:
                 ):
                     try:
                         set_user_active(int(row["id"]), enable, user.actor)
-                        st.success("User status updated.", icon="✅")
-                        st.rerun()
+                        flash_notice("User status updated.")
                     except Exception as exc:
                         show_factory_error(exc)
 
@@ -339,13 +338,13 @@ def _render_audit() -> None:
     with card("Audit Trail", key="settings-audit", note=f"{len(logs):,} records"):
         c1, c2, c3 = st.columns(3)
         username_filter = c1.selectbox(
-            "User", ["All"] + sorted(logs["username"].unique().tolist())
+            "User", ["All", *sorted(logs["username"].unique().tolist())]
         )
         action_filter = c2.selectbox(
-            "Action", ["All"] + sorted(logs["action"].unique().tolist())
+            "Action", ["All", *sorted(logs["action"].unique().tolist())]
         )
         entity_filter = c3.selectbox(
-            "Entity", ["All"] + sorted(logs["entity_type"].unique().tolist())
+            "Entity", ["All", *sorted(logs["entity_type"].unique().tolist())]
         )
         search = st.text_input("Search descriptions", placeholder="Filter by text")
 

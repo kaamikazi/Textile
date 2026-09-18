@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from auth import AuthenticatedUser, authenticate_user, can, create_first_admin, create_user
 import database
+from auth import AuthenticatedUser, authenticate_user, can, create_first_admin, create_user
 
 
 def test_role_permissions():

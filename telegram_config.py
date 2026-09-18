@@ -23,7 +23,18 @@ class TelegramConfig:
     rate_limit_block_seconds: int = 300
 
 
+class TelegramConfigError(RuntimeError):
+    """The Telegram configuration exists but cannot be read."""
+
+
 def _load_streamlit_secrets() -> dict:
+    """Read .streamlit/secrets.toml, if present.
+
+    A missing file is normal - the token may come from the environment.
+    A file that exists but cannot be parsed is not: previously that was
+    swallowed and reported as "token not configured", sending the admin
+    to check the wrong thing. A syntax error in secrets.toml now says so.
+    """
     path = ROOT / ".streamlit" / "secrets.toml"
     if not path.exists():
         return {}
@@ -32,8 +43,12 @@ def _load_streamlit_secrets() -> dict:
             with path.open("rb") as handle:
                 return tomllib.load(handle)
         return toml.load(path)
-    except (OSError, ValueError):
-        return {}
+    except (OSError, ValueError) as exc:
+        raise TelegramConfigError(
+            f"{path.name} exists but could not be read: {exc}. "
+            "Fix the file, or remove it and use the TELEGRAM_BOT_TOKEN "
+            "environment variable instead."
+        ) from exc
 
 
 def _optional_int(value) -> int | None:
@@ -62,4 +77,19 @@ def load_telegram_config(require_token: bool = True) -> TelegramConfig:
 
 
 def telegram_token_is_configured() -> bool:
-    return bool(load_telegram_config(require_token=False).bot_token)
+    """True when a token is available. Never raises, so the admin page
+    still renders when the configuration is broken - use
+    telegram_config_problem() to show why."""
+    try:
+        return bool(load_telegram_config(require_token=False).bot_token)
+    except (TelegramConfigError, ValueError):
+        return False
+
+
+def telegram_config_problem() -> str | None:
+    """A human-readable reason the configuration cannot be loaded, if any."""
+    try:
+        load_telegram_config(require_token=False)
+    except (TelegramConfigError, ValueError) as exc:
+        return str(exc)
+    return None

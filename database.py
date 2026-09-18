@@ -3,15 +3,15 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any, Iterable, Iterator
+from typing import Any
 
 import pandas as pd
-
 
 ROOT = Path(__file__).resolve().parent
 DB_PATH = Path(os.getenv("AL_SADI_DB_PATH", ROOT / "factory.db"))
@@ -60,9 +60,15 @@ def _db_path(path: str | Path | None = None) -> Path:
 
 def connect(path: str | Path | None = None) -> sqlite3.Connection:
     conn = sqlite3.connect(_db_path(path), timeout=15, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA busy_timeout = 15000")
+    try:
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("PRAGMA busy_timeout = 15000")
+    except Exception:
+        # A PRAGMA can fail on a damaged or unreadable file. Close the
+        # handle before propagating so a failing open does not leak one.
+        conn.close()
+        raise
     return conn
 
 

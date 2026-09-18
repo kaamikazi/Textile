@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from contextlib import contextmanager
 from html import escape
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import plotly.graph_objects as go
 import streamlit as st
 
 from auth import AuthenticatedUser
 from database import FactoryError, MutationResult, get_excel_sync_status
-
 
 ROOT = Path(__file__).resolve().parent
 
@@ -404,7 +404,7 @@ def retry_excel_sync() -> bool:
             "Close factory_records.xlsx in Excel, then retry the spreadsheet sync.",
         )
         return False
-    except Exception as exc:  # noqa: BLE001 - surfaced to the operator verbatim
+    except Exception as exc:
         set_excel_sync_status("Failed", f"Spreadsheet sync failed: {exc}")
         return False
 
@@ -468,6 +468,10 @@ def sync_status_panel() -> dict[str, Any]:
 # Result and error feedback
 # ---------------------------------------------------------------------------
 
+FLASH_KEY = "_alsadi_flash"
+NOTICE_KEY = "_alsadi_notice"
+
+
 def show_mutation_result(result: MutationResult, success_message: str) -> None:
     """Confirm the SQLite commit first, then report the Excel step separately.
 
@@ -484,6 +488,55 @@ def show_mutation_result(result: MutationResult, success_message: str) -> None:
         st.error(f"Excel sync failed - your data is safe in the database. {result.sync_message}", icon="⚠")
     else:
         st.warning(f"Excel workbook is out of date. {result.sync_message}", icon="⚠")
+
+
+def flash_mutation(result: MutationResult, success_message: str) -> None:
+    """Record the outcome, then rerun so the page re-reads the database.
+
+    Pages query their tables near the top of `render()`, before the form
+    submit handler further down has run, so a freshly inserted row is not in
+    the DataFrame that was already fetched this pass. Without a rerun the
+    operator sees "saved" above a ledger that does not contain the row.
+
+    Calling `st.rerun()` directly after `show_mutation_result()` does not
+    work either: the rerun discards the render that just drew the message,
+    so the Excel "Out of date"/"Failed" warning never reaches the screen.
+    Stashing the result and drawing it at the top of the next run fixes
+    both - the data is refetched *and* the message survives.
+
+    This never affects durability. The SQLite commit has already happened by
+    the time the MutationResult exists.
+    """
+    st.session_state[FLASH_KEY] = (
+        success_message,
+        result.sync_status,
+        result.sync_message,
+    )
+    st.rerun()
+
+
+def show_flash() -> None:
+    """Draw and clear a pending flash from the previous run, if any."""
+    note = st.session_state.pop(NOTICE_KEY, None)
+    if note:
+        st.success(note, icon="✅")
+
+    payload = st.session_state.pop(FLASH_KEY, None)
+    if not payload:
+        return
+    success_message, sync_status, sync_message = payload
+    show_mutation_result(MutationResult(0, sync_status, sync_message), success_message)
+
+
+def flash_notice(message: str) -> None:
+    """Confirm a non-mutation action across an immediate rerun.
+
+    Same problem as flash_mutation: `st.success(...)` followed by
+    `st.rerun()` draws the message and then discards that render, so the
+    operator never sees it.
+    """
+    st.session_state[NOTICE_KEY] = message
+    st.rerun()
 
 
 def show_factory_error(error: Exception) -> None:

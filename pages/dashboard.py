@@ -25,7 +25,6 @@ from ui import (
     sync_bar,
 )
 
-
 TREND_DAYS = 30
 RUNNING_STATUSES = ["Running", "Active"]
 
@@ -94,7 +93,7 @@ def _attendance_rate(attendance: pd.DataFrame, day: date) -> tuple[float, int, i
     if today_rows.empty:
         return 0.0, 0, 0
     present = int(today_rows["status"].isin(["Present", "Late"]).sum())
-    total = int(len(today_rows))
+    total = len(today_rows)
     return (present / total * 100) if total else 0.0, present, total
 
 
@@ -263,7 +262,7 @@ def render(user: AuthenticatedUser) -> None:
     day_started = has_today_production or has_today_expense
 
     running = int(machines["status"].isin(RUNNING_STATUSES).sum()) if not machines.empty else 0
-    total_machines = int(len(machines))
+    total_machines = len(machines)
     utilisation = (running / total_machines * 100) if total_machines else 0.0
     rate, present, headcount = _attendance_rate(attendance, today)
 

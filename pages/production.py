@@ -12,13 +12,14 @@ from ui import (
     compact_number,
     empty_state,
     field_error,
+    flash_mutation,
     form_total,
     kpi_tile,
     money,
     page_header,
     section_head,
     show_factory_error,
-    show_mutation_result,
+    show_flash,
     spacer,
     sync_bar,
 )
@@ -60,6 +61,7 @@ def render(user: AuthenticatedUser) -> None:
         eyebrow="Daily Operations",
     )
     sync_bar(key="production")
+    show_flash()
 
     machines = fetch_df("SELECT machine_number FROM machines ORDER BY machine_number")
     machine_options = machines["machine_number"].tolist()
@@ -134,7 +136,7 @@ def render(user: AuthenticatedUser) -> None:
                                     production_date, machine_number, operator_name, product_type,
                                     int(quantity), rate_per_unit, user.actor,
                                 )
-                            show_mutation_result(result, "Production entry saved.")
+                            flash_mutation(result, "Production entry saved.")
                         except Exception as exc:
                             show_factory_error(exc)
 
@@ -233,8 +235,7 @@ def render(user: AuthenticatedUser) -> None:
                                 int(selected["id"]), edit_date, edit_machine, edit_operator,
                                 edit_product, int(edit_quantity), edit_rate, user.actor,
                             )
-                            show_mutation_result(result, "Production entry updated.")
-                            st.rerun()
+                            flash_mutation(result, "Production entry updated.")
                         except Exception as exc:
                             show_factory_error(exc)
 
@@ -256,8 +257,7 @@ def render(user: AuthenticatedUser) -> None:
                     ):
                         try:
                             result = delete_production(int(selected["id"]), user.actor)
-                            show_mutation_result(result, "Production entry deleted.")
-                            st.rerun()
+                            flash_mutation(result, "Production entry deleted.")
                         except Exception as exc:
                             show_factory_error(exc)
 

@@ -25,12 +25,13 @@ from ui import (
     chart,
     empty_state,
     field_error,
+    flash_mutation,
     kpi_tile,
     money,
     page_header,
     section_head,
     show_factory_error,
-    show_mutation_result,
+    show_flash,
     spacer,
     sync_bar,
 )
@@ -84,6 +85,7 @@ def render(user: AuthenticatedUser) -> None:
         eyebrow="Daily Operations",
     )
     sync_bar(key="employees")
+    show_flash()
 
     employees = fetch_df("SELECT * FROM employees ORDER BY status, name")
     active = employees[employees["status"] != "Archived"].copy() if not employees.empty else employees
@@ -188,8 +190,7 @@ def _render_attendance(
                         result = create_attendance(
                             lookup[selected], attendance_date, status, notes, user.actor
                         )
-                        show_mutation_result(result, "Attendance recorded.")
-                        st.rerun()
+                        flash_mutation(result, "Attendance recorded.")
                     except Exception as exc:
                         show_factory_error(exc)
 
@@ -299,8 +300,7 @@ def _render_attendance_history(user: AuthenticatedUser, employees: pd.DataFrame,
                             int(selected["id"]), employee_lookup[employee_name], day,
                             edit_status, notes, user.actor,
                         )
-                        show_mutation_result(result, "Attendance updated.")
-                        st.rerun()
+                        flash_mutation(result, "Attendance updated.")
                     except Exception as exc:
                         show_factory_error(exc)
 
@@ -316,8 +316,7 @@ def _render_attendance_history(user: AuthenticatedUser, employees: pd.DataFrame,
                     ):
                         try:
                             result = delete_attendance(int(selected["id"]), user.actor)
-                            show_mutation_result(result, "Attendance deleted.")
-                            st.rerun()
+                            flash_mutation(result, "Attendance deleted.")
                         except Exception as exc:
                             show_factory_error(exc)
 
@@ -379,8 +378,7 @@ def _render_add_employee(user: AuthenticatedUser) -> None:
                         name, role, phone, salary, advance, performance_score,
                         status, joined_on, user.actor,
                     )
-                    show_mutation_result(result, "Employee saved.")
-                    st.rerun()
+                    flash_mutation(result, "Employee saved.")
                 except Exception as exc:
                     show_factory_error(exc)
 
@@ -448,8 +446,7 @@ def _render_edit_employee(user: AuthenticatedUser, editable: pd.DataFrame) -> No
                         int(selected["id"]), name, role, phone, salary, advance,
                         performance, status, joined_on, user.actor,
                     )
-                    show_mutation_result(result, "Employee updated.")
-                    st.rerun()
+                    flash_mutation(result, "Employee updated.")
                 except Exception as exc:
                     show_factory_error(exc)
 
@@ -471,8 +468,7 @@ def _render_edit_employee(user: AuthenticatedUser, editable: pd.DataFrame) -> No
                 ):
                     try:
                         result = archive_employee(int(selected["id"]), user.actor)
-                        show_mutation_result(result, "Employee archived. Attendance history retained.")
-                        st.rerun()
+                        flash_mutation(result, "Employee archived. Attendance history retained.")
                     except Exception as exc:
                         show_factory_error(exc)
 

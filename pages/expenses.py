@@ -15,12 +15,13 @@ from ui import (
     chart,
     empty_state,
     field_error,
+    flash_mutation,
     kpi_tile,
     money,
     page_header,
     section_head,
     show_factory_error,
-    show_mutation_result,
+    show_flash,
     spacer,
     sync_bar,
 )
@@ -84,6 +85,7 @@ def render(user: AuthenticatedUser) -> None:
         eyebrow="Daily Operations",
     )
     sync_bar(key="expenses")
+    show_flash()
 
     expenses = fetch_df(
         """
@@ -154,7 +156,7 @@ def render(user: AuthenticatedUser) -> None:
                                 result = create_expense(
                                     expense_type, amount, description, expense_date, user.actor
                                 )
-                            show_mutation_result(result, "Expense recorded.")
+                            flash_mutation(result, "Expense recorded.")
                         except Exception as exc:
                             show_factory_error(exc)
 
@@ -241,8 +243,7 @@ def render(user: AuthenticatedUser) -> None:
                                 int(selected["id"]), edit_type, edit_amount,
                                 edit_description, edit_date, user.actor,
                             )
-                            show_mutation_result(result, "Expense updated.")
-                            st.rerun()
+                            flash_mutation(result, "Expense updated.")
                         except Exception as exc:
                             show_factory_error(exc)
 
@@ -264,8 +265,7 @@ def render(user: AuthenticatedUser) -> None:
                     ):
                         try:
                             result = delete_expense(int(selected["id"]), user.actor)
-                            show_mutation_result(result, "Expense deleted.")
-                            st.rerun()
+                            flash_mutation(result, "Expense deleted.")
                         except Exception as exc:
                             show_factory_error(exc)
 

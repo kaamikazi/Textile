@@ -468,6 +468,9 @@ def sync_status_panel() -> dict[str, Any]:
 # Result and error feedback
 # ---------------------------------------------------------------------------
 
+FLASH_KEY = "_alsadi_flash"
+
+
 def show_mutation_result(result: MutationResult, success_message: str) -> None:
     """Confirm the SQLite commit first, then report the Excel step separately.
 
@@ -484,6 +487,40 @@ def show_mutation_result(result: MutationResult, success_message: str) -> None:
         st.error(f"Excel sync failed - your data is safe in the database. {result.sync_message}", icon="⚠")
     else:
         st.warning(f"Excel workbook is out of date. {result.sync_message}", icon="⚠")
+
+
+def flash_mutation(result: MutationResult, success_message: str) -> None:
+    """Record the outcome, then rerun so the page re-reads the database.
+
+    Pages query their tables near the top of `render()`, before the form
+    submit handler further down has run, so a freshly inserted row is not in
+    the DataFrame that was already fetched this pass. Without a rerun the
+    operator sees "saved" above a ledger that does not contain the row.
+
+    Calling `st.rerun()` directly after `show_mutation_result()` does not
+    work either: the rerun discards the render that just drew the message,
+    so the Excel "Out of date"/"Failed" warning never reaches the screen.
+    Stashing the result and drawing it at the top of the next run fixes
+    both - the data is refetched *and* the message survives.
+
+    This never affects durability. The SQLite commit has already happened by
+    the time the MutationResult exists.
+    """
+    st.session_state[FLASH_KEY] = (
+        success_message,
+        result.sync_status,
+        result.sync_message,
+    )
+    st.rerun()
+
+
+def show_flash() -> None:
+    """Draw and clear a pending flash from the previous run, if any."""
+    payload = st.session_state.pop(FLASH_KEY, None)
+    if not payload:
+        return
+    success_message, sync_status, sync_message = payload
+    show_mutation_result(MutationResult(0, sync_status, sync_message), success_message)
 
 
 def show_factory_error(error: Exception) -> None:

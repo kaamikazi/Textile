@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import os
-import shutil
 import sqlite3
 import tempfile
 from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 
-from database import Actor, DB_PATH, ValidationError, initialize_database, transaction, write_audit_log
-from spreadsheet_sync import BACKUPS_PATH, WORKBOOK_PATH, backup_excel_file
-
+from database import DB_PATH, Actor, ValidationError, initialize_database, transaction, write_audit_log
+from spreadsheet_sync import BACKUPS_PATH, backup_excel_file
 
 REQUIRED_FACTORY_TABLES = {"production_entries", "expenses", "employees", "machines"}
 

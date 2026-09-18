@@ -12,7 +12,6 @@ import pandas as pd
 from openpyxl.styles import Alignment, Font, PatternFill, Protection
 from openpyxl.utils import get_column_letter
 
-
 ROOT = Path(__file__).resolve().parent
 DEFAULT_DB_PATH = Path(os.getenv("AL_SADI_DB_PATH", ROOT / "factory.db"))
 WORKBOOK_PATH = Path(os.getenv("AL_SADI_WORKBOOK_PATH", ROOT / "factory_records.xlsx"))

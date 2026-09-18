@@ -21,6 +21,7 @@ from database import (
     initialize_demo_data,
     set_excel_sync_status,
 )
+from pages.telegram_admin import render_telegram_automation
 from spreadsheet_sync import sync_factory_workbook
 from ui import (
     card,
@@ -33,8 +34,6 @@ from ui import (
     spacer,
     sync_status_panel,
 )
-from pages.telegram_admin import render_telegram_automation
-
 
 BACKUP_COLUMNS = {
     "name": st.column_config.TextColumn("File"),
@@ -339,13 +338,13 @@ def _render_audit() -> None:
     with card("Audit Trail", key="settings-audit", note=f"{len(logs):,} records"):
         c1, c2, c3 = st.columns(3)
         username_filter = c1.selectbox(
-            "User", ["All"] + sorted(logs["username"].unique().tolist())
+            "User", ["All", *sorted(logs["username"].unique().tolist())]
         )
         action_filter = c2.selectbox(
-            "Action", ["All"] + sorted(logs["action"].unique().tolist())
+            "Action", ["All", *sorted(logs["action"].unique().tolist())]
         )
         entity_filter = c3.selectbox(
-            "Entity", ["All"] + sorted(logs["entity_type"].unique().tolist())
+            "Entity", ["All", *sorted(logs["entity_type"].unique().tolist())]
         )
         search = st.text_input("Search descriptions", placeholder="Filter by text")
 

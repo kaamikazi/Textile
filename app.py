@@ -5,9 +5,8 @@ import streamlit as st
 from auth import AuthenticatedUser, authenticate_user, create_first_admin, log_logout, user_count
 from database import initialize_database
 from pages import dashboard, employees, expenses, machines, production, reports, settings
-from ui import configure_page, sidebar_navigation, show_factory_error
+from ui import configure_page, show_factory_error, sidebar_navigation
 from version import __version__
-
 
 PAGES = {
     "Dashboard": dashboard.render,
@@ -77,7 +76,7 @@ def _auth_shell(title: str, subtitle: str):
     a fixed-width column keeps the form scannable.
     """
     st.markdown('<div class="auth-spacer"></div>', unsafe_allow_html=True)
-    left, middle, right = st.columns([1, 1.15, 1])
+    _, middle, _ = st.columns([1, 1.15, 1])
     with middle:
         st.markdown(
             f"""

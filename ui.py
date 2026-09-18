@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from contextlib import contextmanager
 from html import escape
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import plotly.graph_objects as go
 import streamlit as st
 
 from auth import AuthenticatedUser
 from database import FactoryError, MutationResult, get_excel_sync_status
-
 
 ROOT = Path(__file__).resolve().parent
 
@@ -404,7 +404,7 @@ def retry_excel_sync() -> bool:
             "Close factory_records.xlsx in Excel, then retry the spreadsheet sync.",
         )
         return False
-    except Exception as exc:  # noqa: BLE001 - surfaced to the operator verbatim
+    except Exception as exc:
         set_excel_sync_status("Failed", f"Spreadsheet sync failed: {exc}")
         return False
 

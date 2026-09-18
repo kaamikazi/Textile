@@ -3,15 +3,15 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any, Iterable, Iterator
+from typing import Any
 
 import pandas as pd
-
 
 ROOT = Path(__file__).resolve().parent
 DB_PATH = Path(os.getenv("AL_SADI_DB_PATH", ROOT / "factory.db"))

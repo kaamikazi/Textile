@@ -35,7 +35,6 @@ from ui import (
     sync_bar,
 )
 
-
 EMPLOYEE_UI_STATUSES = ["Active", "On Leave", "Inactive"]
 
 ATTENDANCE_COLUMNS = {
@@ -218,13 +217,13 @@ def _render_attendance_history(user: AuthenticatedUser, employees: pd.DataFrame,
         employee_label = c1.selectbox(
             "Employee", list(employee_options), key="attendance_filter_employee"
         )
-        month_options = ["All months"] + _month_options()
+        month_options = ["All months", *_month_options()]
         default_index = month_options.index(default_month) if default_month in month_options else 0
         month = c2.selectbox(
             "Month", month_options, index=default_index, key="attendance_filter_month"
         )
         status = c3.selectbox(
-            "Status", ["All"] + sorted(ATTENDANCE_STATUSES), key="attendance_filter_status"
+            "Status", ["All", *sorted(ATTENDANCE_STATUSES)], key="attendance_filter_status"
         )
 
         history = attendance_history(

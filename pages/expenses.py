@@ -25,7 +25,6 @@ from ui import (
     sync_bar,
 )
 
-
 EXPENSE_TYPES = ["Yarn", "Electricity", "Salary", "Maintenance", "Transport", "Rent", "Other"]
 
 LEDGER_COLUMNS = {

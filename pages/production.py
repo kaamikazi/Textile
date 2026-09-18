@@ -23,7 +23,6 @@ from ui import (
     sync_bar,
 )
 
-
 PRODUCT_TYPES = ["Rib Collar", "Cuff", "Jacquard Panel", "Flat Knit Body", "Neck Tape", "Other"]
 
 LEDGER_COLUMNS = {

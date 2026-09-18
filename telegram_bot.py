@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import signal
@@ -47,7 +48,6 @@ from telegram_automation import (
     update_pending_operation,
 )
 from telegram_config import TelegramConfig, load_telegram_config
-
 
 ROOT = Path(__file__).resolve().parent
 LOGGER = logging.getLogger("al_sadi.telegram")
@@ -509,10 +509,8 @@ async def post_shutdown(application: Application) -> None:
     task = application.bot_data.get("heartbeat_task")
     if task:
         task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await task
-        except asyncio.CancelledError:
-            pass
 
 
 def build_application(config: TelegramConfig, instance_id: str) -> Application:
@@ -565,12 +563,12 @@ def main() -> None:
             bootstrap_retries=-1,
             stop_signals=(signal.SIGINT, signal.SIGTERM),
         )
-    except Exception:
+    except Exception as exc:
         release_bot_lease(
             instance_id, "Telegram polling service stopped after an API or runtime failure.", True
         )
         LOGGER.error("Telegram polling service stopped after a sanitized runtime failure.")
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
     else:
         release_bot_lease(instance_id)
         LOGGER.info("Telegram polling service stopped cleanly.")

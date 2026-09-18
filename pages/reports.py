@@ -24,7 +24,6 @@ from ui import (
     sync_status_panel,
 )
 
-
 EXCEL_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 REPORT_COLUMNS = {
@@ -146,9 +145,9 @@ def render(user: AuthenticatedUser) -> None:
     )
 
     period_tab_names = ["Daily", "Weekly", "Monthly"]
-    tabs = st.tabs(period_tab_names + ["Excel Export", "Roadmap"])
+    tabs = st.tabs([*period_tab_names, "Excel Export", "Roadmap"])
 
-    for tab, period in zip(tabs[:3], period_tab_names):
+    for tab, period in zip(tabs[:3], period_tab_names, strict=True):
         with tab:
             _render_period(period, user)
 

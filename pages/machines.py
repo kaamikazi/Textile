@@ -26,7 +26,6 @@ from ui import (
     sync_bar,
 )
 
-
 MACHINE_STATUSES = ["Running", "Idle", "Maintenance", "Out of Service", "Offline"]
 PRODUCTIVE_STATUSES = ["Running"]
 

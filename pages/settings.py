@@ -27,10 +27,12 @@ from ui import (
     card,
     empty_state,
     field_error,
+    flash_notice,
     kpi_tile,
     page_header,
     section_head,
     show_factory_error,
+    show_flash,
     spacer,
     sync_status_panel,
 )
@@ -91,6 +93,7 @@ def render(user: AuthenticatedUser) -> None:
         eyebrow="Administration",
     )
 
+    show_flash()
     _render_sync_header(user)
 
     safety_tab, users_tab, telegram_tab, audit_tab, maintenance_tab = st.tabs(
@@ -123,8 +126,7 @@ def _render_sync_header(user: AuthenticatedUser) -> None:
                 path = sync_factory_workbook()
             set_excel_sync_status("Synced", f"Manual sync completed: {path.name}.")
             record_export(user.actor, "Manual Excel synchronization completed from Settings.")
-            st.success("Excel synchronization completed.", icon="✅")
-            st.rerun()
+            flash_notice("Excel synchronization completed.")
         except PermissionError:
             set_excel_sync_status("Failed", "Close factory_records.xlsx in Excel and retry.")
             st.error("Close factory_records.xlsx in Excel and retry.", icon="⚠")
@@ -278,8 +280,7 @@ def _render_users(user: AuthenticatedUser) -> None:
             if submitted:
                 try:
                     create_user(username, password, role, user.actor)
-                    st.success(f"{role} user created.", icon="✅")
-                    st.rerun()
+                    flash_notice(f"{role} user created.")
                 except Exception as exc:
                     show_factory_error(exc)
 
@@ -314,8 +315,7 @@ def _render_users(user: AuthenticatedUser) -> None:
                 ):
                     try:
                         set_user_active(int(row["id"]), enable, user.actor)
-                        st.success("User status updated.", icon="✅")
-                        st.rerun()
+                        flash_notice("User status updated.")
                     except Exception as exc:
                         show_factory_error(exc)
 

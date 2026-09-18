@@ -469,6 +469,7 @@ def sync_status_panel() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 FLASH_KEY = "_alsadi_flash"
+NOTICE_KEY = "_alsadi_notice"
 
 
 def show_mutation_result(result: MutationResult, success_message: str) -> None:
@@ -516,11 +517,26 @@ def flash_mutation(result: MutationResult, success_message: str) -> None:
 
 def show_flash() -> None:
     """Draw and clear a pending flash from the previous run, if any."""
+    note = st.session_state.pop(NOTICE_KEY, None)
+    if note:
+        st.success(note, icon="✅")
+
     payload = st.session_state.pop(FLASH_KEY, None)
     if not payload:
         return
     success_message, sync_status, sync_message = payload
     show_mutation_result(MutationResult(0, sync_status, sync_message), success_message)
+
+
+def flash_notice(message: str) -> None:
+    """Confirm a non-mutation action across an immediate rerun.
+
+    Same problem as flash_mutation: `st.success(...)` followed by
+    `st.rerun()` draws the message and then discards that render, so the
+    operator never sees it.
+    """
+    st.session_state[NOTICE_KEY] = message
+    st.rerun()
 
 
 def show_factory_error(error: Exception) -> None:

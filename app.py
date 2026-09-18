@@ -5,7 +5,7 @@ import streamlit as st
 from auth import AuthenticatedUser, authenticate_user, create_first_admin, log_logout, user_count
 from database import initialize_database
 from pages import dashboard, employees, expenses, machines, production, reports, settings
-from ui import configure_page, show_factory_error, sidebar_navigation
+from ui import configure_page, render_sidebar_sync, show_factory_error, sidebar_navigation
 from version import __version__
 
 PAGES = {
@@ -38,7 +38,7 @@ def main() -> None:
         return
 
     page_names = [name for name in PAGES if user.role == "Admin" or name not in ADMIN_ONLY_PAGES]
-    selected_page, logout = sidebar_navigation(page_names, user)
+    selected_page, logout, sync_slot = sidebar_navigation(page_names, user)
 
     if logout:
         log_logout(user)
@@ -52,6 +52,10 @@ def main() -> None:
         selected_page = "Dashboard"
 
     PAGES[selected_page](user)
+
+    # Filled last so the sidebar chip reflects anything the page just did,
+    # rather than the status as it was before the page ran.
+    render_sidebar_sync(sync_slot)
 
 
 def get_session_user() -> AuthenticatedUser | None:

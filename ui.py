@@ -140,7 +140,9 @@ NAV_GROUPS = [
 ]
 
 
-def sidebar_navigation(pages: list[str], user: AuthenticatedUser) -> tuple[str, bool]:
+def sidebar_navigation(
+    pages: list[str], user: AuthenticatedUser
+) -> tuple[str, bool, Any]:
     initials = (user.username[:2] or "?").upper()
     role_class = "role-staff" if user.role == "Staff" else "role-admin"
 
@@ -203,8 +205,21 @@ def sidebar_navigation(pages: list[str], user: AuthenticatedUser) -> tuple[str, 
         st.sidebar.caption("Staff access: view and add entries. Editing, backups and user management are Admin-only.")
 
     st.sidebar.markdown('<div class="section-spacer"></div>', unsafe_allow_html=True)
+
+    # The sidebar is drawn before the page body, so an action taken while the
+    # page renders would leave this chip showing the previous status - the
+    # sidebar could read "Synced" beside a page reading "Failed". Reserve the
+    # slot here and let the caller fill it once the page has finished.
+    sync_slot = st.sidebar.empty()
+
+    logout = st.sidebar.button("Sign out", width="stretch", key="sidebar_logout")
+    return selected, logout, sync_slot
+
+
+def render_sidebar_sync(slot: Any) -> None:
+    """Fill the sidebar's reserved Excel chip with the current status."""
     sync = get_excel_sync_status()
-    st.sidebar.markdown(
+    slot.markdown(
         f"""
         <div class="sync-bar {_sync_class(sync['status'])}">
             <span class="status-chip {_sync_chip(sync['status'])}">{escape(sync['status'])}</span>
@@ -213,9 +228,6 @@ def sidebar_navigation(pages: list[str], user: AuthenticatedUser) -> tuple[str, 
         """,
         unsafe_allow_html=True,
     )
-
-    logout = st.sidebar.button("Sign out", width="stretch", key="sidebar_logout")
-    return selected, logout
 
 
 # ---------------------------------------------------------------------------
@@ -440,7 +452,7 @@ def sync_bar(*, allow_retry: bool = True, key: str = "page") -> dict[str, Any]:
                 with st.spinner("Rebuilding workbook..."):
                     ok = retry_excel_sync()
                 if ok:
-                    st.toast("Excel workbook is back in sync.", icon="✓")
+                    st.toast("Excel workbook is back in sync.", icon="✅")
                 st.rerun()
     return status
 
@@ -479,7 +491,7 @@ def show_mutation_result(result: MutationResult, success_message: str) -> None:
     never rolled back by a failed workbook rebuild, so the Excel outcome is
     shown as a follow-up, not as a failure of the save.
     """
-    st.toast(success_message, icon="✓")
+    st.toast(success_message, icon="✅")
     if result.sync_status == "Synced":
         st.success(f"{success_message} Excel workbook updated.", icon="✅")
         return
@@ -515,11 +527,22 @@ def flash_mutation(result: MutationResult, success_message: str) -> None:
     st.rerun()
 
 
+_NOTICE_RENDERERS = {
+    "success": (st.success, "✅"),
+    "warning": (st.warning, "⚠"),
+    "error": (st.error, "⚠"),
+}
+
+
 def show_flash() -> None:
     """Draw and clear a pending flash from the previous run, if any."""
     note = st.session_state.pop(NOTICE_KEY, None)
     if note:
-        st.success(note, icon="✅")
+        # Tolerate the bare-string form a session may still be holding from
+        # before tones existed.
+        message, tone = note if isinstance(note, tuple) else (note, "success")
+        render, icon = _NOTICE_RENDERERS.get(tone, _NOTICE_RENDERERS["success"])
+        render(message, icon=icon)
 
     payload = st.session_state.pop(FLASH_KEY, None)
     if not payload:
@@ -528,27 +551,46 @@ def show_flash() -> None:
     show_mutation_result(MutationResult(0, sync_status, sync_message), success_message)
 
 
-def flash_notice(message: str) -> None:
-    """Confirm a non-mutation action across an immediate rerun.
+def flash_notice(message: str, tone: str = "success") -> None:
+    """Report a non-mutation action across an immediate rerun.
 
     Same problem as flash_mutation: `st.success(...)` followed by
     `st.rerun()` draws the message and then discards that render, so the
     operator never sees it.
+
+    The rerun matters for more than the message. Anything the action changed
+    that the page already rendered above it - the Excel sync panel, a backup
+    listing - is re-read on the next pass, so the page cannot show a stale
+    status beside a fresh confirmation.
+
+    `tone` selects success/warning/error styling, so a failed action can use
+    the same mechanism instead of an st.error() that a rerun would discard.
     """
-    st.session_state[NOTICE_KEY] = message
+    st.session_state[NOTICE_KEY] = (message, tone)
     st.rerun()
 
 
-def show_factory_error(error: Exception) -> None:
-    """Validation problems are the operator's to fix, so show them verbatim.
-    Anything else is a system fault and gets a generic, non-leaking message."""
+def factory_error_message(error: Exception) -> str:
+    """Validation problems are the operator's to fix, so they are shown
+    verbatim. Anything else is a system fault and gets a generic message that
+    does not leak internals."""
     if isinstance(error, FactoryError):
-        st.error(str(error), icon="⚠")
-    else:
-        st.error(
-            "The operation could not be completed. Check the application logs and try again.",
-            icon="⚠",
-        )
+        return str(error)
+    return "The operation could not be completed. Check the application logs and try again."
+
+
+def show_factory_error(error: Exception) -> None:
+    st.error(factory_error_message(error), icon="⚠")
+
+
+def flash_factory_error(error: Exception) -> None:
+    """Report a failure across a rerun.
+
+    Used where the failed action already changed something the page rendered
+    above it - most importantly the Excel sync status, which would otherwise
+    still read "Synced" directly above a message saying the sync failed.
+    """
+    flash_notice(factory_error_message(error), tone="error")
 
 
 def field_error(message: str) -> None:

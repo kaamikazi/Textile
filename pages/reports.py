@@ -21,6 +21,7 @@ from ui import (
     section_head,
     show_factory_error,
     spacer,
+    sync_bar,
     sync_status_panel,
 )
 
@@ -143,6 +144,11 @@ def render(user: AuthenticatedUser) -> None:
         "Daily, weekly and monthly performance with controlled Excel and CSV exports.",
         eyebrow="Analysis",
     )
+    # The Excel Export tab can change the sync status. Reserve the bar's
+    # position here and fill it after the tabs render, so it reports the
+    # state *after* any action rather than before it. A rerun would also
+    # fix the staleness, but it would reset the user's selected tab.
+    sync_slot = st.empty()
 
     period_tab_names = ["Daily", "Weekly", "Monthly"]
     tabs = st.tabs([*period_tab_names, "Excel Export", "Roadmap"])
@@ -156,6 +162,9 @@ def render(user: AuthenticatedUser) -> None:
 
     with tabs[4]:
         _render_roadmap()
+
+    with sync_slot.container():
+        sync_bar(key="reports")
 
     spacer("bottom")
 
@@ -220,7 +229,8 @@ def _render_period(period: str, user: AuthenticatedUser) -> None:
 
 def _render_excel(user: AuthenticatedUser) -> None:
     section_head("Workbook Status")
-    sync_status_panel()
+    # Filled at the end of this tab, after the actions below have run.
+    status_slot = st.empty()
 
     with card("Generate and Download", key="report-excel-actions"):
         action_columns = st.columns(2)
@@ -233,7 +243,7 @@ def _render_excel(user: AuthenticatedUser) -> None:
                     with st.spinner("Rebuilding workbook..."):
                         workbook_path = sync_factory_workbook()
                     _mark_sync_success(workbook_path, user, "Full Excel workbook generated from SQLite.")
-                    st.success(f"Spreadsheet updated: {workbook_path.name}", icon="✅")
+                    st.success(f"Workbook rebuilt: {workbook_path.name}", icon="✅")
                 except Exception as exc:
                     _mark_sync_failure(exc)
         with action_columns[1]:
@@ -289,6 +299,9 @@ def _render_excel(user: AuthenticatedUser) -> None:
                     "Download backup file", backup_path, "download-excel-backup", user,
                     f"Excel backup downloaded: {backup_path.name}.",
                 )
+
+    with status_slot.container():
+        sync_status_panel()
 
     with card("How Excel Sync Works", key="report-excel-help"):
         st.markdown(

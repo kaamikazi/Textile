@@ -16,9 +16,9 @@ if not defined PY_CMD (
     exit /b 9009
 )
 
-%PY_CMD% -c "import telegram" >nul 2>&1
+%PY_CMD% -c "import telegram, pandas, openpyxl" >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] python-telegram-bot is not installed for this interpreter: %PY_CMD%
+    echo [ERROR] Required packages are missing for this interpreter: %PY_CMD%
     echo Run: %PY_CMD% -m pip install -r requirements.txt
     exit /b 1
 )

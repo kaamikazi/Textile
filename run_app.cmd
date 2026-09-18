@@ -19,9 +19,9 @@ if not defined PY_CMD (
     exit /b 9009
 )
 
-%PY_CMD% -c "import streamlit" >nul 2>&1
+%PY_CMD% -c "import streamlit, pandas, plotly, openpyxl" >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Streamlit is not installed for this interpreter: %PY_CMD%>> "%~dp0streamlit.log"
+    echo [ERROR] Required packages are missing for this interpreter: %PY_CMD%>> "%~dp0streamlit.log"
     echo Run: %PY_CMD% -m pip install -r requirements.txt>> "%~dp0streamlit.log"
     exit /b 1
 )

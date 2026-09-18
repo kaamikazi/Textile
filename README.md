@@ -1,15 +1,22 @@
 # Al Sadi Knitwear Factory OS
 
+[![CI](https://github.com/kaamikazi/Textile/actions/workflows/ci.yml/badge.svg)](https://github.com/kaamikazi/Textile/actions/workflows/ci.yml)
+
 Version **v1.2.0** is a local Streamlit factory-management application backed by SQLite, with Plotly dashboards, protected Excel exports, and a separately operated secure Telegram submission bot.
 
 ## Installation
 
-For Python 3.11 or newer:
+Requires **Python 3.10 or newer**; 3.11+ is recommended. On 3.10 the
+`toml` package is installed automatically as a `tomllib` stand-in.
 
 ```powershell
 cd "E:\al sadi"
 python -m pip install -r requirements.txt
 ```
+
+Install with the same interpreter you will launch the app with. The
+launchers resolve Python at run time (`py -3`, then `python` on `PATH`)
+and refuse to start with a clear message if the packages are missing.
 
 ## Running
 
@@ -81,6 +88,7 @@ python -m pytest -q
 
 ## Troubleshooting
 
+- **Nothing happens when you double-click `start_app.vbs`:** it now shows a message box on failure. Check `streamlit.log` for the reason; the usual cause is packages installed for a different interpreter.
 - **No module named streamlit/plotly:** install `requirements.txt` with the same interpreter used to launch the app.
 - **Excel sync failed:** close Excel, verify write access, then use **Retry Excel Sync**.
 - **Duplicate attendance:** one entry per employee/date is enforced; edit the existing entry.

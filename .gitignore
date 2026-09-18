@@ -24,6 +24,9 @@ venv/
 # Tooling caches
 .ruff_cache/
 
+# Local tooling config
+.claude/
+
 # Editor and OS files
 .vscode/
 .idea/

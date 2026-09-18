@@ -140,7 +140,9 @@ NAV_GROUPS = [
 ]
 
 
-def sidebar_navigation(pages: list[str], user: AuthenticatedUser) -> tuple[str, bool]:
+def sidebar_navigation(
+    pages: list[str], user: AuthenticatedUser
+) -> tuple[str, bool, Any]:
     initials = (user.username[:2] or "?").upper()
     role_class = "role-staff" if user.role == "Staff" else "role-admin"
 
@@ -203,8 +205,21 @@ def sidebar_navigation(pages: list[str], user: AuthenticatedUser) -> tuple[str, 
         st.sidebar.caption("Staff access: view and add entries. Editing, backups and user management are Admin-only.")
 
     st.sidebar.markdown('<div class="section-spacer"></div>', unsafe_allow_html=True)
+
+    # The sidebar is drawn before the page body, so an action taken while the
+    # page renders would leave this chip showing the previous status - the
+    # sidebar could read "Synced" beside a page reading "Failed". Reserve the
+    # slot here and let the caller fill it once the page has finished.
+    sync_slot = st.sidebar.empty()
+
+    logout = st.sidebar.button("Sign out", width="stretch", key="sidebar_logout")
+    return selected, logout, sync_slot
+
+
+def render_sidebar_sync(slot: Any) -> None:
+    """Fill the sidebar's reserved Excel chip with the current status."""
     sync = get_excel_sync_status()
-    st.sidebar.markdown(
+    slot.markdown(
         f"""
         <div class="sync-bar {_sync_class(sync['status'])}">
             <span class="status-chip {_sync_chip(sync['status'])}">{escape(sync['status'])}</span>
@@ -213,9 +228,6 @@ def sidebar_navigation(pages: list[str], user: AuthenticatedUser) -> tuple[str, 
         """,
         unsafe_allow_html=True,
     )
-
-    logout = st.sidebar.button("Sign out", width="stretch", key="sidebar_logout")
-    return selected, logout
 
 
 # ---------------------------------------------------------------------------
@@ -440,7 +452,7 @@ def sync_bar(*, allow_retry: bool = True, key: str = "page") -> dict[str, Any]:
                 with st.spinner("Rebuilding workbook..."):
                     ok = retry_excel_sync()
                 if ok:
-                    st.toast("Excel workbook is back in sync.", icon="✓")
+                    st.toast("Excel workbook is back in sync.", icon="✅")
                 st.rerun()
     return status
 
@@ -479,7 +491,7 @@ def show_mutation_result(result: MutationResult, success_message: str) -> None:
     never rolled back by a failed workbook rebuild, so the Excel outcome is
     shown as a follow-up, not as a failure of the save.
     """
-    st.toast(success_message, icon="✓")
+    st.toast(success_message, icon="✅")
     if result.sync_status == "Synced":
         st.success(f"{success_message} Excel workbook updated.", icon="✅")
         return

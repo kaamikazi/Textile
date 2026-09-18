@@ -13,7 +13,7 @@ from telegram_automation import (
     recent_telegram_audit,
     set_telegram_user_status,
 )
-from telegram_config import telegram_token_is_configured
+from telegram_config import telegram_config_problem, telegram_token_is_configured
 from ui import card, empty_state, field_error, kpi_tile, show_factory_error, spacer
 
 
@@ -47,6 +47,13 @@ def render_telegram_automation(user: AuthenticatedUser) -> None:
         kpi_tile("Last Heartbeat", str(status["heartbeat_at"] or "Never"), "from the bot process")
 
     spacer()
+
+    problem = telegram_config_problem()
+    if problem:
+        st.error(
+            f"Telegram configuration could not be read. {problem}",
+            icon="⚠",
+        )
 
     with card("Connection", key="telegram-connection"):
         st.markdown(

@@ -368,3 +368,38 @@ def test_failed_validation_writes_no_row_and_no_audit_entry(isolated_factory, ac
         "SELECT COUNT(*) AS n FROM audit_logs WHERE entity_type = 'production'", path=db_path
     )["n"]
     assert audit_after == audit_before
+
+
+# ---------------------------------------------------------------------------
+# Configuration diagnosability
+# ---------------------------------------------------------------------------
+
+def test_malformed_secrets_file_reports_itself(tmp_path, monkeypatch):
+    """A TOML syntax error must not masquerade as "no token configured"."""
+    import telegram_config
+
+    secrets_dir = tmp_path / ".streamlit"
+    secrets_dir.mkdir()
+    (secrets_dir / "secrets.toml").write_text(
+        '[telegram]\nbot_token = "unterminated\n', encoding="utf-8"
+    )
+    monkeypatch.setattr(telegram_config, "ROOT", tmp_path)
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+
+    problem = telegram_config.telegram_config_problem()
+    assert problem is not None
+    assert "secrets.toml" in problem
+
+    # The admin page must still render rather than raising.
+    assert telegram_config.telegram_token_is_configured() is False
+
+
+def test_missing_secrets_file_is_not_an_error(tmp_path, monkeypatch):
+    """No secrets.toml is normal - the token may come from the environment."""
+    import telegram_config
+
+    monkeypatch.setattr(telegram_config, "ROOT", tmp_path)
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123456:test-token-value")
+
+    assert telegram_config.telegram_config_problem() is None
+    assert telegram_config.telegram_token_is_configured() is True

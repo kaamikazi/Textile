@@ -515,11 +515,22 @@ def flash_mutation(result: MutationResult, success_message: str) -> None:
     st.rerun()
 
 
+_NOTICE_RENDERERS = {
+    "success": (st.success, "✅"),
+    "warning": (st.warning, "⚠"),
+    "error": (st.error, "⚠"),
+}
+
+
 def show_flash() -> None:
     """Draw and clear a pending flash from the previous run, if any."""
     note = st.session_state.pop(NOTICE_KEY, None)
     if note:
-        st.success(note, icon="✅")
+        # Tolerate the bare-string form a session may still be holding from
+        # before tones existed.
+        message, tone = note if isinstance(note, tuple) else (note, "success")
+        render, icon = _NOTICE_RENDERERS.get(tone, _NOTICE_RENDERERS["success"])
+        render(message, icon=icon)
 
     payload = st.session_state.pop(FLASH_KEY, None)
     if not payload:
@@ -528,27 +539,46 @@ def show_flash() -> None:
     show_mutation_result(MutationResult(0, sync_status, sync_message), success_message)
 
 
-def flash_notice(message: str) -> None:
-    """Confirm a non-mutation action across an immediate rerun.
+def flash_notice(message: str, tone: str = "success") -> None:
+    """Report a non-mutation action across an immediate rerun.
 
     Same problem as flash_mutation: `st.success(...)` followed by
     `st.rerun()` draws the message and then discards that render, so the
     operator never sees it.
+
+    The rerun matters for more than the message. Anything the action changed
+    that the page already rendered above it - the Excel sync panel, a backup
+    listing - is re-read on the next pass, so the page cannot show a stale
+    status beside a fresh confirmation.
+
+    `tone` selects success/warning/error styling, so a failed action can use
+    the same mechanism instead of an st.error() that a rerun would discard.
     """
-    st.session_state[NOTICE_KEY] = message
+    st.session_state[NOTICE_KEY] = (message, tone)
     st.rerun()
 
 
-def show_factory_error(error: Exception) -> None:
-    """Validation problems are the operator's to fix, so show them verbatim.
-    Anything else is a system fault and gets a generic, non-leaking message."""
+def factory_error_message(error: Exception) -> str:
+    """Validation problems are the operator's to fix, so they are shown
+    verbatim. Anything else is a system fault and gets a generic message that
+    does not leak internals."""
     if isinstance(error, FactoryError):
-        st.error(str(error), icon="⚠")
-    else:
-        st.error(
-            "The operation could not be completed. Check the application logs and try again.",
-            icon="⚠",
-        )
+        return str(error)
+    return "The operation could not be completed. Check the application logs and try again."
+
+
+def show_factory_error(error: Exception) -> None:
+    st.error(factory_error_message(error), icon="⚠")
+
+
+def flash_factory_error(error: Exception) -> None:
+    """Report a failure across a rerun.
+
+    Used where the failed action already changed something the page rendered
+    above it - most importantly the Excel sync status, which would otherwise
+    still read "Synced" directly above a message saying the sync failed.
+    """
+    flash_notice(factory_error_message(error), tone="error")
 
 
 def field_error(message: str) -> None:

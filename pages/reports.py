@@ -15,12 +15,15 @@ from ui import (
     card,
     chart,
     empty_state,
+    flash_notice,
     kpi_tile,
     money,
     page_header,
     section_head,
     show_factory_error,
+    show_flash,
     spacer,
+    sync_bar,
     sync_status_panel,
 )
 
@@ -79,6 +82,8 @@ def _available_months() -> list[str]:
 def _mark_sync_success(path: Path, user: AuthenticatedUser, description: str) -> None:
     set_excel_sync_status("Synced", f"Workbook updated: {path.name}")
     record_export(user.actor, description)
+    # Reruns: the sync panel above this handler is now stale.
+    flash_notice(f"Workbook rebuilt: {path.name}")
 
 
 def _mark_sync_failure(error: Exception) -> None:
@@ -88,7 +93,7 @@ def _mark_sync_failure(error: Exception) -> None:
         else f"Spreadsheet sync failed: {error}"
     )
     set_excel_sync_status("Failed", message)
-    st.error(message, icon="⚠")
+    flash_notice(message, tone="error")
 
 
 def _download_excel(
@@ -143,6 +148,8 @@ def render(user: AuthenticatedUser) -> None:
         "Daily, weekly and monthly performance with controlled Excel and CSV exports.",
         eyebrow="Analysis",
     )
+    show_flash()
+    sync_bar(key="reports")
 
     period_tab_names = ["Daily", "Weekly", "Monthly"]
     tabs = st.tabs([*period_tab_names, "Excel Export", "Roadmap"])
@@ -233,7 +240,6 @@ def _render_excel(user: AuthenticatedUser) -> None:
                     with st.spinner("Rebuilding workbook..."):
                         workbook_path = sync_factory_workbook()
                     _mark_sync_success(workbook_path, user, "Full Excel workbook generated from SQLite.")
-                    st.success(f"Spreadsheet updated: {workbook_path.name}", icon="✅")
                 except Exception as exc:
                     _mark_sync_failure(exc)
         with action_columns[1]:

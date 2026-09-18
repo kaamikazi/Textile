@@ -27,6 +27,8 @@ from ui import (
     card,
     empty_state,
     field_error,
+    flash_factory_error,
+    flash_mutation,
     flash_notice,
     kpi_tile,
     page_header,
@@ -128,11 +130,13 @@ def _render_sync_header(user: AuthenticatedUser) -> None:
             record_export(user.actor, "Manual Excel synchronization completed from Settings.")
             flash_notice("Excel synchronization completed.")
         except PermissionError:
+            # Both failure paths must rerun: they just set the status to
+            # Failed, and sync_status_panel() above still shows the old one.
             set_excel_sync_status("Failed", "Close factory_records.xlsx in Excel and retry.")
-            st.error("Close factory_records.xlsx in Excel and retry.", icon="⚠")
+            flash_notice("Close factory_records.xlsx in Excel and retry.", tone="error")
         except Exception as exc:
             set_excel_sync_status("Failed", f"Manual sync failed: {exc}")
-            show_factory_error(exc)
+            flash_factory_error(exc)
 
 
 # ---------------------------------------------------------------------------
@@ -233,10 +237,9 @@ def _render_data_safety(user: AuthenticatedUser) -> None:
                             str(row["path"]), confirmation, user.actor
                         )
                     _remember_download(pre_restore)
-                    st.success(
+                    flash_notice(
                         f"Database restored. Pre-restore backup: {pre_restore.name}. "
-                        "Sign in again if prompted.",
-                        icon="✅",
+                        "Sign in again if prompted."
                     )
                 except Exception as exc:
                     show_factory_error(exc)
@@ -393,7 +396,7 @@ def _render_maintenance(user: AuthenticatedUser) -> None:
         if st.button("Clean duplicate seed activities", width="stretch", key="cleanup-seed"):
             try:
                 removed = cleanup_duplicate_seed_activities(user.actor)
-                st.success(f"Removed {removed} duplicated seed activities.", icon="✅")
+                flash_notice(f"Removed {removed} duplicated seed activities.")
             except Exception as exc:
                 show_factory_error(exc)
 
@@ -416,6 +419,6 @@ def _render_maintenance(user: AuthenticatedUser) -> None:
         ):
             try:
                 result = initialize_demo_data(user.actor)
-                st.success(result.sync_message, icon="✅")
+                flash_mutation(result, "Demo data initialised.")
             except Exception as exc:
                 show_factory_error(exc)

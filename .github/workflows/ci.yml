@@ -5,9 +5,11 @@ name: CI
 # branch is renamed later. See PRODUCTION_READINESS.md.
 on:
   push:
-    branches: [main, master]
+    # Working branches are covered too, so a stacked PR (one that targets
+    # another feature branch rather than master) still gets CI.
+    branches: [main, master, "claude/**"]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, "claude/**"]
 
 # A new push to the same branch supersedes an in-flight run.
 concurrency:

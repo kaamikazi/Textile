@@ -51,6 +51,53 @@ Usernames are never used for authorization because they can change.
 
 Private chats are allowed for authorized users. Group or supergroup messages are rejected unless the exact numeric chat ID is configured as `TELEGRAM_APPROVED_GROUP_ID` or `telegram.approved_group_id`. Keep that group private and control membership.
 
+## Enable Free-Text Entry (Optional)
+
+Free-text entry lets staff send one message instead of answering the button
+flow field by field. It is optional: without a key the bot runs normally and
+uses the button flow only.
+
+1. Create an API key at <https://aistudio.google.com/app/apikey>.
+2. Install the dependency (already in `requirements.txt`):
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+3. Provide the key the same way as the bot token - environment variable:
+
+```powershell
+$env:GEMINI_API_KEY="key-from-google-ai-studio"
+```
+
+   or `.streamlit/secrets.toml`:
+
+```toml
+[gemini]
+api_key = "key-from-google-ai-studio"
+```
+
+4. Restart `run_telegram_bot.cmd`. The launcher prints a warning if the
+   package is missing and an informational line if no key is configured;
+   neither blocks startup.
+
+The model defaults to `gemini-3.5-flash-lite` and can be overridden with
+`GEMINI_MODEL`. Model identifiers change - check
+<https://ai.google.dev/gemini-api/docs/models> before pinning a different one.
+
+**What this does not change.** Parsed messages never write to the database
+directly. They produce the same Confirm / Edit / Cancel screen as a slash
+command, and the write still happens only when the operator taps Confirm.
+Authorization and rate limits are applied before a message is parsed, so
+free text cannot reach the service if a command would have been refused.
+An incomplete or ambiguous message is refused rather than guessed. See
+`TELEGRAM_COMMANDS.md`.
+
+**Cost and privacy.** The message text is sent to Google's Gemini API for
+parsing. Nothing else is sent - no database contents, employee records or
+credentials. If that is not acceptable, leave `GEMINI_API_KEY` unset and the
+feature stays off.
+
 ## Token Rotation
 
 1. Stop `telegram_bot.py`.

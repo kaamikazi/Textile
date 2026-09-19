@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased - 2026-09-19 - Natural-language Telegram intake
+
+- Added optional free-text Telegram entry (`gemini_intake.py`): one message such as "machine 3, rafiq made 250 round-neck tshirts today at 12 taka each" now produces the same Confirm / Edit / Cancel screen as `/production`.
+- Parsing never writes to SQLite and never skips confirmation; it only produces a payload that `create_pending_operation` accepts, so the write still happens in `confirm_pending_operation`.
+- Refuses rather than guesses: a missing quantity, rate or amount, an ambiguous production/expense message, or an unregistered or ambiguous machine all fall back to the existing menu prompt.
+- Hooked at the point where a free-text message previously had nowhere to go, so authorization, chat restriction and rate limiting are enforced before any API call, and a workflow already in progress is never interrupted.
+- Entries from this path are tagged `[natural-language]` in the audit log with the source message, so an Admin can review how each was read.
+- Added `google-genai` to requirements, `GEMINI_API_KEY` to the env and secrets examples, and an optional-dependency warning to `run_telegram_bot.cmd`.
+- Model pinned to `gemini-3.5-flash-lite`, checked against Google's current list: the 2.0 Flash models are shut down.
+- Added 25 tests that mock the client entirely, so no API key or network access is needed in CI.
+
 ## Unreleased - 2026-09-19 - Production hardening
 
 - Fixed `run_app.cmd`, `run_telegram_bot.cmd` and `start_app.vbs`, which hardcoded a per-user AI tooling cache interpreter that no longer has Streamlit installed; both launchers were broken, and `start_app.vbs` failed silently. They now resolve Python at run time, verify dependencies, and report failures.

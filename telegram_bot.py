@@ -28,6 +28,11 @@ from telegram.ext import (
 
 import database
 from database import FactoryError, ValidationError, fetch_df, get_excel_sync_status
+from gemini_intake import (
+    extract_entry,
+    natural_language_enabled,
+    record_intake_audit,
+)
 from telegram_automation import (
     PendingOperation,
     TelegramAccessError,
@@ -313,13 +318,60 @@ def _parse_date_text(text: str) -> str:
     return database._require_date(date.today() if text.strip().lower() == "today" else text.strip(), "Date")
 
 
+async def _handle_natural_language(update: Update, user: TelegramUser) -> None:
+    """Try to read a free-text message as a production or expense entry.
+
+    Anything less than a complete, validated entry falls back to the normal
+    menu prompt. Nothing here writes a factory record: a successful parse
+    only creates a pending operation and shows the same Confirm / Edit /
+    Cancel screen the button flow produces, so the write still happens in
+    confirm_pending_operation() when the operator taps Confirm.
+    """
+    text = (update.effective_message.text or "").strip()
+
+    parsed = None
+    if text and natural_language_enabled():
+        try:
+            # extract_entry() makes a blocking HTTPS call; keep it off the
+            # event loop so the bot stays responsive to other chats.
+            parsed = await asyncio.to_thread(extract_entry, text)
+        except Exception:
+            LOGGER.warning("Natural-language intake failed; using the button flow.")
+            parsed = None
+
+    if parsed is None:
+        await _reply(update, "Choose a command from the menu first.", MENU)
+        return
+
+    operation_type, payload = parsed
+    try:
+        operation = create_pending_operation(
+            user, update.effective_chat.id, operation_type, "confirm", payload
+        )
+    except (FactoryError, TelegramAccessError) as exc:
+        record_telegram_rejection(user.telegram_user_id, str(exc), user.application_role)
+        await _reply(update, "Choose a command from the menu first.", MENU)
+        return
+
+    record_intake_audit(user, operation.operation_id, operation_type, text)
+    await _reply(
+        update,
+        _confirmation_text(operation),
+        _operation_keyboard(operation.operation_id),
+    )
+
+
 async def text_input_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = await _guard(update, context)
     if not user or not update.effective_message:
         return
     operation = get_active_pending_operation(user.telegram_user_id)
     if not operation:
-        await _reply(update, "Choose a command from the menu first.", MENU)
+        # No workflow in progress, so this is either a free-text entry or
+        # noise. _guard() has already enforced the rate limit, chat
+        # restriction and authorization, so a message only reaches the
+        # parser if a button-driven one would have been allowed through.
+        await _handle_natural_language(update, user)
         return
     text = update.effective_message.text.strip()
     payload = dict(operation.payload)

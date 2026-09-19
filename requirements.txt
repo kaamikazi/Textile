@@ -4,5 +4,8 @@ plotly>=5.22
 openpyxl>=3.1
 pytest>=8.0
 python-telegram-bot>=21.0,<23.0
+# Natural-language Telegram intake (gemini_intake.py). Optional at
+# runtime: the bot falls back to the button flow if it is absent.
+google-genai>=2.24,<3.0
 # telegram_config.py falls back to this when tomllib is unavailable (< 3.11).
 toml>=0.10; python_version < "3.11"
